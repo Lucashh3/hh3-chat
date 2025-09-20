@@ -11,8 +11,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "HH3 Chat Copilot",
-  description: "Plataforma SaaS para conversar com o agente IA DeepSeek com planos de assinatura."
+  title: "HH3 Mentor de Roleta",
+  description: "Mentor HH3 especializado em roleta europeia, disponível via chat com o Método 3 – Estratégia de Zonas."
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

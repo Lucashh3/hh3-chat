@@ -96,14 +96,14 @@ export function AuthForm({ mode, title, description }: AuthFormProps) {
           <label className="text-sm font-medium" htmlFor="email">
             E-mail
           </label>
-          <Input id="email" type="email" placeholder="voce@empresa.com" {...register("email")} />
+          <Input id="email" type="email" placeholder="apostador@exemplo.com" {...register("email")} />
           {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="password">
             Senha
           </label>
-          <Input id="password" type="password" placeholder="" {...register("password")} />
+          <Input id="password" type="password" placeholder="******" {...register("password")} />
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
         <Button type="submit" className="w-full" disabled={loading}>

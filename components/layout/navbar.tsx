@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { PLANS } from "@/lib/plans";
 
 const NAV_ITEMS = [
-  { label: "Funcionalidades", href: "#features" },
+  { label: "Método 3", href: "#features" },
   { label: "Planos", href: "#pricing" },
-  { label: "Como funciona", href: "#how-it-works" }
+  { label: "Mentoria", href: "#how-it-works" }
 ];
 
 export function Navbar({ authenticated }: { authenticated: boolean }) {
@@ -27,7 +27,7 @@ export function Navbar({ authenticated }: { authenticated: boolean }) {
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-          HH3 Chat
+          HH3 Mentor de Roleta
         </Link>
         <div className="hidden md:flex">
           <NavigationMenu>
@@ -64,7 +64,7 @@ export function Navbar({ authenticated }: { authenticated: boolean }) {
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
               <Button asChild>
-                <Link href="/chat">Abrir chat</Link>
+                <Link href="/chat">Falar com HH3</Link>
               </Button>
             </>
           ) : (

@@ -41,7 +41,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: R
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold">Bem-vindo, {profile?.full_name ?? session.user.email}</h1>
         <p className="text-muted-foreground">
-          Acompanhe sua assinatura, histórico e acesse o chat com o agente DeepSeek.
+          Acompanhe sua jornada com o mentor HH3: planos, histórico de sequências e o chat de estratégia.
         </p>
       </div>
 
@@ -67,15 +67,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: R
 
         <Card>
           <CardHeader>
-            <CardTitle>Próximos passos</CardTitle>
-            <CardDescription>Gerencie sua assinatura ou abra o chat agora mesmo.</CardDescription>
+            <CardTitle>Mentoria com HH3</CardTitle>
+            <CardDescription>Gerencie sua assinatura ou retome a última análise de roleta.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Button asChild>
-              <Link href="/chat">Ir para o chat</Link>
+              <Link href="/chat">Abrir chat com HH3</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/">Ver landing page</Link>
+              <Link href="/">Revisar o método</Link>
             </Button>
           </CardContent>
         </Card>
@@ -84,7 +84,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: R
       <Card>
         <CardHeader>
           <CardTitle>Histórico recente</CardTitle>
-          <CardDescription>As últimas mensagens gravadas no Supabase.</CardDescription>
+          <CardDescription>Leituras registradas pelo HH3 para suas últimas sequências.</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="max-h-80">

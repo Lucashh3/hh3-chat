@@ -10,16 +10,16 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const FEATURE_ITEMS = [
   {
-    title: "Copiloto em tempo real",
-    description: "Obtenha respostas consistentes usando o modelo DeepSeek com prompt otimizado para o seu negócio."
+    title: "Leitura de zonas em segundos",
+    description: "HH3 identifica o setor mais quente da roleta europeia analisando suas últimas jogadas."
   },
   {
-    title: "Histórico inteligente",
-    description: "Cada usuário possui histórico isolado com persistência no Supabase e busca contextual."
+    title: "Mentoria contextual contínua",
+    description: "Receba justificativas claras do Método 3 diretamente no chat, 24 horas por dia."
   },
   {
-    title: "Planos flexíveis",
-    description: "Monetize com planos mensais integrados ao Stripe para upgrade, downgrade e cancelamento."
+    title: "Gestão disciplinada de banca",
+    description: "Acompanhe entradas, histórico e lembretes para seguir o método HH3 sem desvios."
   }
 ];
 
@@ -34,21 +34,22 @@ export default async function LandingPage() {
       <Navbar authenticated={Boolean(session)} />
       <main className="flex-1">
         <section className="container flex flex-col items-center justify-center gap-8 py-20 text-center">
-          <Badge variant="secondary">Seu copiloto de IA com monetização pronta</Badge>
+          <Badge variant="secondary">Mentoria HH3 de Roleta Europeia</Badge>
           <div className="max-w-3xl space-y-6">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-              Construa um agente de IA com assinatura em minutos
+              Transforme cada giro com o mentor HH3 no seu chat
             </h1>
             <p className="text-lg text-muted-foreground">
-              Ofereça um chat alimentado pelo DeepSeek com autenticação Supabase e pagamentos Stripe. Gestão de planos e histórico isolado para cada usuário.
+              HH3, especialista em roleta europeia, compartilha o Método 3 – Estratégia de Zonas diretamente no chat.
+              Envie a sequência mais recente e receba o alvo ideal com cobertura, vizinhos e avaliação do sinal.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Button size="lg" asChild>
-              <Link href="/auth/register">Criar conta gratuita</Link>
+              <Link href="/auth/register">Liberar acesso gratuito</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <Link href="/auth/login">Já tenho conta</Link>
+              <Link href="/auth/login">Já estudo com o HH3</Link>
             </Button>
           </div>
         </section>
@@ -68,11 +69,9 @@ export default async function LandingPage() {
 
         <section id="pricing" className="container py-20">
           <div className="text-center">
-            <Badge variant="secondary">Planos para todos os estágios</Badge>
-            <h2 className="mt-4 text-3xl font-semibold">Escolha o plano ideal</h2>
-            <p className="mt-2 text-muted-foreground">
-              Assinaturas recorrentes via Stripe com upgrade e downgrade instantâneo.
-            </p>
+            <Badge variant="secondary">Escolha o nível de mentoria</Badge>
+            <h2 className="mt-4 text-3xl font-semibold">Planos do método HH3</h2>
+            <p className="mt-2 text-muted-foreground">Assinaturas recorrentes com upgrade instantâneo para liberar mais análises e suporte.</p>
           </div>
           <Tabs defaultValue="monthly" className="mt-10 flex flex-col gap-6">
             <TabsList className="self-center">
@@ -96,16 +95,16 @@ export default async function LandingPage() {
           <div className="container grid gap-8 md:grid-cols-3">
             {[
               {
-                title: "1. Crie sua conta",
-                description: "Autenticação Supabase com magic link ou email e senha."
+                title: "1. Ative seu acesso HH3",
+                description: "Crie a conta e confirme o e-mail para desbloquear a mentoria guiada."
               },
               {
-                title: "2. Assine um plano",
-                description: "Stripe Checkout garante cobrança segura e atualização em tempo real."
+                title: "2. Selecione o nível de acompanhamento",
+                description: "Escolha o plano que libera sequências ilimitadas, histórico e suporte dedicado."
               },
               {
-                title: "3. Converse com a IA",
-                description: "Chat estilo ChatGPT com streaming e histórico salvo."
+                title: "3. Envie a sequência e execute",
+                description: "Cole os últimos resultados e receba alvo, vizinhos e leitura do sinal em segundos."
               }
             ].map((item) => (
               <Card key={item.title}>
@@ -160,7 +159,7 @@ function PlanCard({ plan, billingCycle }: PlanCardProps) {
         </div>
         <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
           {plan.features.map((feature) => (
-            <li key={feature}> {feature}</li>
+            <li key={feature}>- {feature}</li>
           ))}
         </ul>
       </CardContent>

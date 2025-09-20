@@ -21,14 +21,14 @@ export function ChatClient({ initialMessages }: ChatClientProps) {
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <header className="border-b p-4">
-        <h1 className="text-xl font-semibold">Chat com DeepSeek</h1>
-        <p className="text-sm text-muted-foreground">Converse em tempo real com histórico persistido.</p>
+        <h1 className="text-xl font-semibold">Chat com HH3</h1>
+        <p className="text-sm text-muted-foreground">Envie as últimas dezenas da roleta europeia e receba o alvo guiado pelo mentor.</p>
       </header>
       <ScrollArea className="flex-1 p-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
           {messages.length === 0 && !loading ? (
             <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-              Envie sua primeira mensagem para iniciar a conversa!
+              Cole a sequência dos últimos giros para HH3 iniciar a leitura da mesa.
             </div>
           ) : (
             messages.map((message) => (
@@ -43,8 +43,8 @@ export function ChatClient({ initialMessages }: ChatClientProps) {
                 <div
                   className={
                     message.role === "assistant"
-                      ? "rounded-lg bg-muted px-4 py-2 text-sm"
-                      : "rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+                      ? "rounded-lg bg-muted px-4 py-2 text-sm whitespace-pre-wrap"
+                      : "rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground whitespace-pre-wrap"
                   }
                 >
                   {message.content}
@@ -69,13 +69,13 @@ export function ChatClient({ initialMessages }: ChatClientProps) {
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 p-4">
           <Textarea
-            placeholder="Digite sua mensagem..."
+            placeholder="Cole aqui os últimos resultados (ex: 17, 8, 32...)"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             rows={4}
           />
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            {error ? <span className="text-destructive">{error}</span> : <span>Model: DeepSeek Chat</span>}
+            {error ? <span className="text-destructive">{error}</span> : <span>Mentor: HH3 · DeepSeek</span>}
             <Button type="submit" disabled={loading}>
               {loading ? "Enviando..." : "Enviar"}
             </Button>
