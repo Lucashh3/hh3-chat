@@ -63,6 +63,9 @@ export function Navbar({ authenticated }: { authenticated: boolean }) {
               <Button variant="ghost" asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/settings">Configurações</Link>
+              </Button>
               <Button asChild>
                 <Link href="/chat">Falar com HH3</Link>
               </Button>

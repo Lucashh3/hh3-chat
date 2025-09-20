@@ -16,6 +16,7 @@ export interface Database {
           role: "user" | "assistant" | "system";
           content: string;
           created_at: string;
+          session_id: string;
         };
         Insert: {
           id?: string;
@@ -23,6 +24,7 @@ export interface Database {
           role: "user" | "assistant" | "system";
           content: string;
           created_at?: string;
+          session_id: string;
         };
         Update: {
           id?: string;
@@ -30,6 +32,30 @@ export interface Database {
           role?: "user" | "assistant" | "system";
           content?: string;
           created_at?: string;
+          session_id?: string;
+        };
+      };
+      chat_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
       };
       profiles: {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 
 import "./globals.css";
 
@@ -24,6 +25,27 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="pt-BR">
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var key = 'hh3-theme';
+                var stored = window.localStorage.getItem(key);
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (error) {
+                console.warn('Falha ao aplicar o tema salvo', error);
+              }
+            `.replace(/\s+/g, " ")
+          }}
+        />
         <SupabaseProvider initialSession={session}>
           {children}
         </SupabaseProvider>
