@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { applyStripeEvent } from "@/lib/stripe-events";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import type { Database } from "@/types/database";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
@@ -31,11 +32,13 @@ export async function POST(request: Request) {
 
   const adminClient = createAdminSupabaseClient();
 
-  const { data: record, error } = await adminClient
+  const { data: record, error } = (await adminClient
     .from("stripe_webhook_events")
     .select("payload")
     .eq("stripe_event_id", eventId)
-    .maybeSingle();
+    .maybeSingle<{
+      payload: Database["public"]["Tables"]["stripe_webhook_events"]["Row"]["payload"];
+    }>();
 
   if (error) {
     console.error(error);
