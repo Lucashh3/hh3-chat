@@ -70,6 +70,31 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ success: true });
     }
 
+    case "toggleBlock": {
+      const shouldBlock = Boolean(payload?.blocked);
+
+      const { error: adminError } = await adminClient.auth.admin.updateUserById(userId, {
+        ban_duration: shouldBlock ? "indefinite" : "none"
+      });
+
+      if (adminError) {
+        console.error(adminError);
+        return NextResponse.json({ error: adminError.message ?? "Não foi possível atualizar o usuário" }, { status: 500 });
+      }
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ is_blocked: shouldBlock })
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error(profileError);
+        return NextResponse.json({ error: "Não foi possível registrar o status" }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
     default:
       return NextResponse.json({ error: "Ação não suportada" }, { status: 400 });
   }

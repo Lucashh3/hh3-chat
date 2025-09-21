@@ -28,9 +28,12 @@ export default async function AdminUsersPage({
 
   const baseQuery = supabase
     .from("profiles")
-    .select("id, full_name, email, active_plan, subscription_status, cpf, phone, birth_date, created_at", {
-      count: "exact"
-    })
+    .select(
+      "id, full_name, email, active_plan, subscription_status, cpf, phone, birth_date, is_blocked, created_at",
+      {
+        count: "exact"
+      }
+    )
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -58,6 +61,7 @@ export default async function AdminUsersPage({
     phone: user.phone,
     birth_date: user.birth_date,
     created_at: user.created_at,
+     is_blocked: Boolean(user.is_blocked),
     chat_count: 0,
     last_chat_at: null
   }));

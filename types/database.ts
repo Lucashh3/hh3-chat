@@ -89,6 +89,7 @@ export interface Database {
           cpf: string | null;
           phone: string | null;
           birth_date: string | null;
+          is_blocked: boolean | null;
         };
         Insert: {
           id: string;
@@ -103,6 +104,7 @@ export interface Database {
           cpf?: string | null;
           phone?: string | null;
           birth_date?: string | null;
+          is_blocked?: boolean | null;
         };
         Update: {
           id?: string;
@@ -117,6 +119,7 @@ export interface Database {
           cpf?: string | null;
           phone?: string | null;
           birth_date?: string | null;
+          is_blocked?: boolean | null;
         };
       };
     };

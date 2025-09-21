@@ -19,6 +19,7 @@ export interface AdminUserRow {
   phone: string | null;
   birth_date: string | null;
   created_at: string;
+  is_blocked: boolean;
   chat_count: number;
   last_chat_at: string | null;
 }
@@ -35,6 +36,7 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
   const [selectedUserId, setSelectedUserId] = useState<string | null>(users[0]?.id ?? null);
   const [search, setSearch] = useState(query);
   const [selectedPlan, setSelectedPlan] = useState<string>(users[0]?.active_plan ?? "free");
+  const [blocked, setBlocked] = useState<boolean>(users[0]?.is_blocked ?? false);
   const [actionLoading, setActionLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -47,6 +49,7 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
 
   useEffect(() => {
     setSelectedPlan(selectedUser?.active_plan ?? "free");
+    setBlocked(selectedUser?.is_blocked ?? false);
   }, [selectedUser]);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -78,6 +81,7 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
   const performAction = async (action: string, payload?: Record<string, unknown>) => {
     if (!selectedUser) return;
     setActionLoading(true);
+    let succeeded = false;
     try {
       const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
         method: "POST",
@@ -92,6 +96,7 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
       }
 
       toast({ title: "Ação concluída com sucesso" });
+      succeeded = true;
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -103,6 +108,7 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
     } finally {
       setActionLoading(false);
     }
+    return succeeded;
   };
 
   const handleChangePlan = () => {
@@ -121,6 +127,15 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
       return;
     }
     performAction("resetPassword", { newPassword });
+  };
+
+  const handleToggleBlock = () => {
+    const nextBlocked = !blocked;
+    performAction("toggleBlock", { blocked: nextBlocked }).then((success) => {
+      if (success) {
+        setBlocked(nextBlocked);
+      }
+    });
   };
 
   return (
@@ -173,7 +188,11 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
                       <td className="py-2 pr-4 text-muted-foreground">{user.email ?? "-"}</td>
                       <td className="py-2 pr-4 capitalize">{user.active_plan ?? "free"}</td>
                       <td className="py-2 pr-4 text-muted-foreground">
-                        {user.subscription_status ? user.subscription_status.toLowerCase() : "-"}
+                        {user.is_blocked
+                          ? "bloqueado"
+                          : user.subscription_status
+                          ? user.subscription_status.toLowerCase()
+                          : "-"}
                       </td>
                       <td className="py-2 pr-4 text-muted-foreground">
                         {user.chat_count} {user.chat_count === 1 ? "chat" : "chats"}
@@ -251,7 +270,11 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
               </p>
               <p>
                 <span className="font-medium">Status assinatura:</span>{" "}
-                {selectedUser.subscription_status ? selectedUser.subscription_status.toLowerCase() : "-"}
+                {selectedUser.is_blocked
+                  ? "bloqueado"
+                  : selectedUser.subscription_status
+                  ? selectedUser.subscription_status.toLowerCase()
+                  : "-"}
               </p>
               <p>
                 <span className="font-medium">Criado em:</span> {new Date(selectedUser.created_at).toLocaleDateString("pt-BR")}
@@ -299,8 +322,13 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
                 <Button variant="outline" size="sm" onClick={handleResetPassword} disabled={actionLoading}>
                   {actionLoading ? "Processando..." : "Resetar senha"}
                 </Button>
-                <Button variant="destructive" size="sm" disabled>
-                  Bloquear usuário (em breve)
+                <Button
+                  variant={blocked ? "outline" : "destructive"}
+                  size="sm"
+                  disabled={actionLoading}
+                  onClick={handleToggleBlock}
+                >
+                  {actionLoading ? "Processando..." : blocked ? "Desbloquear usuário" : "Bloquear usuário"}
                 </Button>
               </div>
             </section>
