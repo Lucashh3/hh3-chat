@@ -19,7 +19,10 @@ if (!apiKey) {
   console.warn("DEEPSEEK_API_KEY is not set. Calls to DeepSeek will fail until you provide it.");
 }
 
-export const callDeepSeek = async (messages: DeepSeekMessage[]): Promise<DeepSeekResponse> => {
+export const callDeepSeek = async (
+  messages: DeepSeekMessage[],
+  systemPrompt: string = DEFAULT_SYSTEM_PROMPT
+): Promise<DeepSeekResponse> => {
   if (!apiKey) {
     throw new Error("Missing DeepSeek API key");
   }
@@ -32,7 +35,7 @@ export const callDeepSeek = async (messages: DeepSeekMessage[]): Promise<DeepSee
     },
     body: JSON.stringify({
       model: DEEPSEEK_MODEL,
-      messages: [{ role: "system", content: DEFAULT_SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.2
     })
   });

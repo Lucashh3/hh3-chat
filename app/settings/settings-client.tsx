@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 
 interface PlanSummary {
@@ -20,6 +22,9 @@ interface ProfileSummary {
   active_plan: string | null;
   subscription_status: string | null;
   email: string | null;
+  cpf: string | null;
+  phone: string | null;
+  birth_date: string | null;
 }
 
 interface SettingsClientProps {
@@ -166,143 +171,178 @@ export function SettingsClient({ plan, profile, userEmail, userCreatedAt }: Sett
 
   return (
     <div className="container space-y-8 px-4 py-8 sm:px-6 sm:py-10">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold sm:text-3xl">Configurações</h1>
-        <p className="text-sm text-muted-foreground">Gerencie seus dados, preferências e segurança da conta.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold sm:text-3xl">Configurações</h1>
+          <p className="text-sm text-muted-foreground">Gerencie seus dados, preferências e segurança da conta.</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/chat">← Voltar para o chat</Link>
+        </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Seu plano atual</CardTitle>
-            <CardDescription>Revise o que está incluído e faça upgrades quando quiser.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-lg font-semibold capitalize">
-                {plan?.name ?? "Plano gratuito"}
-              </p>
-              <p className="text-sm text-muted-foreground">{plan?.description ?? "Acesso inicial ao método HH3."}</p>
-            </div>
-            <div className="rounded-md border bg-muted/30 p-3 text-sm">
-              <p>
-                <span className="font-medium">Status da assinatura:</span> {subscriptionLabel}
-              </p>
-              <p>
-                <span className="font-medium">Plano configurado:</span> {profile?.active_plan ?? "free"}
-              </p>
-            </div>
-            {plan?.features?.length ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Benefícios incluídos:</p>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
+      <Tabs defaultValue="geral" className="space-y-6">
+        <TabsList className="flex flex-wrap gap-2">
+          <TabsTrigger value="geral">Geral</TabsTrigger>
+          <TabsTrigger value="plano">Plano</TabsTrigger>
+          <TabsTrigger value="preferencias">Preferências</TabsTrigger>
+          <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+          <TabsTrigger value="conta">Conta</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="geral" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dados do usuário</CardTitle>
+              <CardDescription>Informações sincronizadas com seu cadastro no HH3.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm md:grid-cols-2">
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="font-medium">Nome completo</p>
+                <p className="text-muted-foreground">{profile?.full_name ?? "Atualize seu nome no cadastro."}</p>
               </div>
-            ) : null}
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline">
-              <a href="/dashboard">Gerenciar planos</a>
-            </Button>
-          </CardFooter>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados do usuário</CardTitle>
-            <CardDescription>Informações sincronizadas com seu cadastro no HH3.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="rounded-md border bg-muted/20 p-3">
-              <p className="font-medium">E-mail</p>
-              <p className="text-muted-foreground">{userEmail ?? "Não informado"}</p>
-            </div>
-            <div className="rounded-md border bg-muted/20 p-3">
-              <p className="font-medium">Nome completo</p>
-              <p className="text-muted-foreground">{profile?.full_name ?? "Atualize seu nome no cadastro."}</p>
-            </div>
-            <div className="rounded-md border bg-muted/20 p-3">
-              <p className="font-medium">Conta criada em</p>
-              <p className="text-muted-foreground">
-                {userCreatedAt ? new Date(userCreatedAt).toLocaleDateString("pt-BR") : "Não disponível"}
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="font-medium">E-mail</p>
+                <p className="text-muted-foreground">{userEmail ?? "Não informado"}</p>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="font-medium">CPF</p>
+                <p className="text-muted-foreground">{profile?.cpf ?? "-"}</p>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="font-medium">Celular</p>
+                <p className="text-muted-foreground">{profile?.phone ?? "-"}</p>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="font-medium">Data de nascimento</p>
+                <p className="text-muted-foreground">
+                  {profile?.birth_date ? new Date(profile.birth_date).toLocaleDateString("pt-BR") : "-"}
+                </p>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <p className="font-medium">Conta criada em</p>
+                <p className="text-muted-foreground">
+                  {userCreatedAt ? new Date(userCreatedAt).toLocaleDateString("pt-BR") : "Não disponível"}
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <p className="text-xs text-muted-foreground">
+                Para atualizar nome, e-mail ou CPF, entre em contato com o suporte HH3.
               </p>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <p className="text-xs text-muted-foreground">
-              Para atualizar nome ou e-mail, entre em contato com o suporte HH3.
-            </p>
-          </CardFooter>
-        </Card>
-      </div>
+            </CardFooter>
+          </Card>
+        </TabsContent>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferências de tema</CardTitle>
-            <CardDescription>Escolha a aparência que combina com você.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            {(["light", "dark"] as ThemeOption[]).map((mode) => (
-              <Button
-                key={mode}
-                variant={theme === mode ? "default" : "outline"}
-                onClick={() => handleThemeChange(mode)}
-              >
-                {mode === "light" ? "Modo claro" : "Modo escuro"}
+        <TabsContent value="plano" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Seu plano atual</CardTitle>
+              <CardDescription>Revise o que está incluído e faça upgrades quando quiser.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-lg font-semibold capitalize">
+                  {plan?.name ?? "Plano gratuito"}
+                </p>
+                <p className="text-sm text-muted-foreground">{plan?.description ?? "Acesso inicial ao método HH3."}</p>
+              </div>
+              <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                <p>
+                  <span className="font-medium">Status da assinatura:</span> {subscriptionLabel}
+                </p>
+                <p>
+                  <span className="font-medium">Plano configurado:</span> {profile?.active_plan ?? "free"}
+                </p>
+              </div>
+              {plan?.features?.length ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Benefícios incluídos:</p>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                    {plan.features.map((feature) => (
+                      <li key={feature}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </CardContent>
+            <CardFooter>
+              <Button asChild variant="outline">
+                <a href="/dashboard">Gerenciar planos</a>
               </Button>
-            ))}
-          </CardContent>
-        </Card>
+            </CardFooter>
+          </Card>
+        </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Alterar senha</CardTitle>
-            <CardDescription>Defina uma senha forte para manter sua conta protegida.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-3" onSubmit={handlePasswordSubmit}>
-              <Input
-                type="password"
-                placeholder="Nova senha"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-              <Input
-                type="password"
-                placeholder="Confirme a nova senha"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-              />
-              <Button type="submit" disabled={passwordLoading} className="w-full">
-                {passwordLoading ? "Atualizando..." : "Salvar nova senha"}
+        <TabsContent value="preferencias" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferências de tema</CardTitle>
+              <CardDescription>Escolha a aparência que combina com você.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              {(["light", "dark"] as ThemeOption[]).map((mode) => (
+                <Button
+                  key={mode}
+                  variant={theme === mode ? "default" : "outline"}
+                  onClick={() => handleThemeChange(mode)}
+                >
+                  {mode === "light" ? "Modo claro" : "Modo escuro"}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="seguranca" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Alterar senha</CardTitle>
+              <CardDescription>Defina uma senha forte para manter sua conta protegida.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-3" onSubmit={handlePasswordSubmit}>
+                <Input
+                  type="password"
+                  placeholder="Nova senha"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <Input
+                  type="password"
+                  placeholder="Confirme a nova senha"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+                <Button type="submit" disabled={passwordLoading} className="w-full">
+                  {passwordLoading ? "Atualizando..." : "Salvar nova senha"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="conta" className="space-y-4">
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle className="text-destructive">Apagar conta</CardTitle>
+              <CardDescription>
+                Remova definitivamente sua conta HH3 e todos os chats salvos. Esta ação não pode ser desfeita.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <p>
+                Ao confirmar, todos os chats, sessões e dados associados serão apagados e você será desconectado.
+              </p>
+            </CardContent>
+            <CardFooter>
+              <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteLoading}>
+                {deleteLoading ? "Apagando conta..." : "Apagar conta"}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-destructive/40">
-        <CardHeader>
-          <CardTitle className="text-destructive">Apagar conta</CardTitle>
-          <CardDescription>
-            Remova definitivamente sua conta HH3 e todos os chats salvos. Esta ação não pode ser desfeita.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <p>
-            Ao confirmar, todos os chats, sessões e dados associados serão apagados e você será desconectado.
-          </p>
-        </CardContent>
-        <CardFooter>
-          <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteLoading}>
-            {deleteLoading ? "Apagando conta..." : "Apagar conta"}
-          </Button>
-        </CardFooter>
-      </Card>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

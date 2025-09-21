@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { callDeepSeek } from "@/lib/deepseek";
 import { checkSubscriptionStatus } from "@/lib/subscription";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
+import { DEFAULT_SYSTEM_PROMPT } from "@/lib/plans";
 
 const SESSION_TITLE_MAX = 80;
 
@@ -157,6 +158,14 @@ export async function POST(request: Request) {
 
   const messages = history?.map((message) => ({ role: message.role, content: message.content })) ?? [];
 
+  const { data: promptSetting } = await supabase
+    .from("admin_settings")
+    .select("value")
+    .eq("key", "system_prompt")
+    .maybeSingle();
+
+  const systemPrompt = promptSetting?.value ?? DEFAULT_SYSTEM_PROMPT;
+
   const userMessage = {
     id: crypto.randomUUID(),
     role: "user" as const,
@@ -165,7 +174,7 @@ export async function POST(request: Request) {
   };
 
   // Chama a API DeepSeek já com o prompt de sistema configurado em lib/deepseek
-  const assistantResponse = await callDeepSeek([...messages, { role: "user", content }]);
+  const assistantResponse = await callDeepSeek([...messages, { role: "user", content }], systemPrompt);
 
   const assistantMessage = {
     id: assistantResponse.id,

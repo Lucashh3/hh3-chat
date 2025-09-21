@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, active_plan, subscription_status, email")
+    .select("full_name, active_plan, subscription_status, email, cpf, phone, birth_date")
     .eq("id", session.user.id)
     .maybeSingle();
 
@@ -32,13 +32,19 @@ export default async function SettingsPage() {
         full_name: profile.full_name,
         active_plan: profile.active_plan,
         subscription_status: profile.subscription_status,
-        email: profile.email
+        email: profile.email,
+        cpf: profile.cpf,
+        phone: profile.phone,
+        birth_date: profile.birth_date
       }
     : {
         full_name: metadataFullName,
         active_plan: "free",
         subscription_status: null,
-        email: session.user.email ?? null
+        email: session.user.email ?? null,
+        cpf: null,
+        phone: null,
+        birth_date: null
       };
 
   return (

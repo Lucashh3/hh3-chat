@@ -58,6 +58,23 @@ export interface Database {
           updated_at?: string;
         };
       };
+      admin_settings: {
+        Row: {
+          key: string;
+          value: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          value?: string | null;
+          updated_at?: string;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -69,6 +86,9 @@ export interface Database {
           stripe_subscription_id: string | null;
           created_at: string;
           updated_at: string;
+          cpf: string | null;
+          phone: string | null;
+          birth_date: string | null;
         };
         Insert: {
           id: string;
@@ -80,6 +100,9 @@ export interface Database {
           stripe_subscription_id?: string | null;
           created_at?: string;
           updated_at?: string;
+          cpf?: string | null;
+          phone?: string | null;
+          birth_date?: string | null;
         };
         Update: {
           id?: string;
@@ -91,6 +114,9 @@ export interface Database {
           stripe_subscription_id?: string | null;
           created_at?: string;
           updated_at?: string;
+          cpf?: string | null;
+          phone?: string | null;
+          birth_date?: string | null;
         };
       };
     };

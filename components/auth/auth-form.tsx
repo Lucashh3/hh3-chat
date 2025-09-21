@@ -10,11 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { isValidCpf, sanitizeCpf } from "@/lib/utils";
 
 const schema = z.object({
   email: z.string().email("Informe um e-mail válido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  name: z.string().optional()
+  name: z.string().optional(),
+  cpf: z.string().optional(),
+  phone: z.string().optional(),
+  birthdate: z.string().optional()
 });
 
 interface AuthFormProps {
@@ -44,13 +48,37 @@ export function AuthForm({ mode, title, description }: AuthFormProps) {
     setLoading(true);
     try {
       if (mode === "register") {
+        if (!values.cpf || !values.phone || !values.birthdate) {
+          toast({
+            title: "Complete os dados",
+            description: "Informe CPF, celular e data de nascimento para criar sua conta.",
+            variant: "destructive"
+          });
+          throw new Error("Dados obrigatórios ausentes");
+        }
+
+        const sanitizedCpf = sanitizeCpf(values.cpf);
+        if (!isValidCpf(sanitizedCpf)) {
+          toast({
+            title: "CPF inválido",
+            description: "Verifique o número informado e tente novamente.",
+            variant: "destructive"
+          });
+          throw new Error("CPF inválido");
+        }
+
+        const sanitizedPhone = values.phone.replace(/\D/g, "");
+
         const { error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
             data: {
               full_name: values.name,
-              active_plan: plan ?? "free"
+              active_plan: plan ?? "free",
+              cpf: sanitizedCpf,
+              phone: sanitizedPhone,
+              birth_date: values.birthdate
             }
           }
         });
@@ -90,6 +118,28 @@ export function AuthForm({ mode, title, description }: AuthFormProps) {
               Nome completo
             </label>
             <Input id="name" placeholder="Maria Silva" {...register("name")} />
+          </div>
+        )}
+        {mode === "register" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium" htmlFor="cpf">
+                CPF
+              </label>
+              <Input id="cpf" placeholder="000.000.000-00" {...register("cpf")} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium" htmlFor="phone">
+                Celular
+              </label>
+              <Input id="phone" placeholder="(11) 91234-5678" {...register("phone")} />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-sm font-medium" htmlFor="birthdate">
+                Data de nascimento
+              </label>
+              <Input id="birthdate" type="date" {...register("birthdate")} />
+            </div>
           </div>
         )}
         <div className="space-y-1">

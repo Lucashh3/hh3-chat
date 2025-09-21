@@ -1,14 +1,8 @@
-import { redirect } from "next/navigation";
-
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { PLANS } from "@/lib/plans";
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
+import { PLANS, DEFAULT_SYSTEM_PROMPT } from "@/lib/plans";
+import { PromptEditor } from "@/components/admin/prompt-editor";
 
 interface StatCardProps {
   title: string;
@@ -28,37 +22,34 @@ const StatCard = ({ title, value, helper }: StatCardProps) => (
 
 export default async function AdminPage() {
   const supabase = createServerSupabaseClient();
-  const {
-    data: { session }
-  } = await supabase.auth.getSession();
 
-  if (!session) {
-    redirect("/auth/login?redirectTo=/admin");
-  }
-
-  const email = session.user.email?.toLowerCase() ?? "";
-  if (!ADMIN_EMAILS.includes(email)) {
-    redirect("/");
-  }
-
-  const [{ count: totalUsers }, { count: activeSubscribers }, { count: totalSessions }, { count: totalMessages }] = await Promise.all([
+  const [{ count: totalUsers }, { count: activeSubscribers }, { count: totalSessions }, { count: totalMessages }, promptSetting] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("subscription_status", "active"),
     supabase.from("chat_sessions").select("id", { count: "exact", head: true }),
-    supabase.from("chats").select("id", { count: "exact", head: true })
+    supabase.from("chats").select("id", { count: "exact", head: true }),
+    supabase
+      .from("admin_settings")
+      .select("value, updated_at")
+      .eq("key", "system_prompt")
+      .maybeSingle()
   ]);
 
   const planCounts: Record<string, number> = {};
-  for (const plan of PLANS) {
-    const { count } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("active_plan", plan.id);
-    planCounts[plan.name] = count ?? 0;
-  }
+  const planCountsResult = await Promise.all(
+    PLANS.map((plan) =>
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("active_plan", plan.id)
+    )
+  );
+  planCountsResult.forEach((result, index) => {
+    planCounts[PLANS[index].name] = result.count ?? 0;
+  });
 
   const { data: recentUsers } = await supabase
     .from("profiles")
@@ -72,8 +63,11 @@ export default async function AdminPage() {
     .order("updated_at", { ascending: false })
     .limit(8);
 
+  const promptValue = promptSetting?.data?.value ?? DEFAULT_SYSTEM_PROMPT;
+  const promptUpdatedAt = promptSetting?.data?.updated_at ?? null;
+
   return (
-    <div className="container space-y-8 px-4 py-8 sm:px-6">
+    <div className="space-y-8 px-4 py-8 sm:px-6">
       <div className="space-y-2">
         <Badge variant="secondary" className="w-fit">
           Painel administrativo
@@ -102,6 +96,18 @@ export default async function AdminPage() {
           helper="Histórico total (usuários + HH3)"
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Prompt do HH3</CardTitle>
+          <CardDescription>
+            Ajuste o comportamento do mentor diretamente por aqui. Mudanças entram em vigor imediatamente nas próximas conversas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PromptEditor initialPrompt={promptValue} updatedAt={promptUpdatedAt} />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
