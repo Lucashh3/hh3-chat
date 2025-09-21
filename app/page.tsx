@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PLANS } from "@/lib/plans";
+import type { Plan } from "@/lib/plans";
+import { fetchActivePlans } from "@/lib/plan-service";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const FEATURE_ITEMS = [
@@ -28,10 +29,12 @@ export default async function LandingPage() {
   const {
     data: { session }
   } = await supabase.auth.getSession();
+  const plans = await fetchActivePlans();
+  const featuredPlanId = plans.find((plan) => plan.id === "pro")?.id ?? plans[0]?.id ?? null;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar authenticated={Boolean(session)} />
+      <Navbar authenticated={Boolean(session)} plans={plans} />
       <main className="flex-1">
         <section className="container flex flex-col items-center justify-center gap-8 px-4 py-16 text-center sm:px-6 sm:py-20">
           <Badge variant="secondary">Mentoria HH3 de Roleta Europeia</Badge>
@@ -79,13 +82,13 @@ export default async function LandingPage() {
               <TabsTrigger value="yearly">Anual</TabsTrigger>
             </TabsList>
             <TabsContent value="monthly" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {PLANS.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} billingCycle="monthly" />
+              {plans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} billingCycle="monthly" featuredPlanId={featuredPlanId} />
               ))}
             </TabsContent>
             <TabsContent value="yearly" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {PLANS.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} billingCycle="yearly" />
+              {plans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} billingCycle="yearly" featuredPlanId={featuredPlanId} />
               ))}
             </TabsContent>
           </Tabs>
@@ -135,19 +138,20 @@ export default async function LandingPage() {
 }
 
 interface PlanCardProps {
-  plan: (typeof PLANS)[number];
+  plan: Plan;
   billingCycle: "monthly" | "yearly";
+  featuredPlanId: string | null;
 }
 
-function PlanCard({ plan, billingCycle }: PlanCardProps) {
+function PlanCard({ plan, billingCycle, featuredPlanId }: PlanCardProps) {
   const price = billingCycle === "yearly" && plan.priceYearly ? plan.priceYearly : plan.priceMonthly * (billingCycle === "yearly" ? 10 : 1);
 
   return (
-    <Card className={plan.id === "pro" ? "border-primary shadow-lg" : undefined}>
+    <Card className={plan.id === featuredPlanId ? "border-primary shadow-lg" : undefined}>
       <CardHeader>
         <CardTitle className="flex flex-col items-start justify-between gap-2 text-left text-2xl sm:flex-row sm:items-center">
           <span>{plan.name}</span>
-          {plan.id === "pro" && <Badge className="w-fit">Popular</Badge>}
+          {plan.id === featuredPlanId && <Badge className="w-fit">Popular</Badge>}
         </CardTitle>
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>

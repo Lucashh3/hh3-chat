@@ -252,7 +252,7 @@ export function SettingsClient({ plan, profile, userEmail, userCreatedAt }: Sett
                   <span className="font-medium">Status da assinatura:</span> {subscriptionLabel}
                 </p>
                 <p>
-                  <span className="font-medium">Plano configurado:</span> {profile?.active_plan ?? "free"}
+                  <span className="font-medium">Plano configurado:</span> {plan?.name ?? profile?.active_plan ?? "free"}
                 </p>
               </div>
               {plan?.features?.length ? (

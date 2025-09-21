@@ -1,7 +1,8 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
-import { resolvePlanFromPriceId, stripe } from "@/lib/stripe";
+import { stripe } from "@/lib/stripe";
+import { applyStripeEvent } from "@/lib/stripe-events";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -30,48 +31,39 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminSupabaseClient();
+  const eventPayload = JSON.parse(JSON.stringify(event));
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const customerId = session.customer as string | null;
-      const subscriptionId = session.subscription as string | null;
-      const userId = session.metadata?.userId;
-      const plan = resolvePlanFromPriceId(session.metadata?.plan ?? null);
+  let status: "processed" | "error" = "processed";
+  let errorMessage: string | null = null;
 
-      if (customerId && subscriptionId && userId) {
-        await (supabase.from("profiles") as any)
-          .update({
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
-            subscription_status: "active",
-            active_plan: plan ?? "pro"
-          })
-          .eq("id", userId);
-      }
-      break;
-    }
+  try {
+    await applyStripeEvent(event, supabase);
+  } catch (error) {
+    status = "error";
+    errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Stripe webhook processing failed", error);
+  }
 
-    case "customer.subscription.updated":
-    case "customer.subscription.created":
-    case "customer.subscription.deleted": {
-      const subscription = event.data.object as Stripe.Subscription;
-      const customerId = subscription.customer as string;
-      const priceId = subscription.items.data[0]?.price?.id;
-      const plan = resolvePlanFromPriceId(priceId);
+  try {
+    await supabase
+      .from("stripe_webhook_events")
+      .upsert(
+        {
+          stripe_event_id: event.id,
+          type: event.type,
+          status,
+          error_message: errorMessage,
+          payload: eventPayload,
+          processed_at: status === "processed" ? new Date().toISOString() : null
+        },
+        { onConflict: "stripe_event_id" }
+      );
+  } catch (logError) {
+    console.error("Failed to persist Stripe webhook event", logError);
+  }
 
-      await (supabase.from("profiles") as any)
-        .update({
-          active_plan: plan ?? "pro",
-          stripe_subscription_id: subscription.id,
-          subscription_status: subscription.status as any
-        })
-        .eq("stripe_customer_id", customerId);
-      break;
-    }
-
-    default:
-      break;
+  if (status === "error") {
+    return NextResponse.json({ error: "processing_failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { checkSubscriptionStatus } from "@/lib/subscription";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { PLANS } from "@/lib/plans";
+import { fetchPlanById } from "@/lib/plan-service";
 
 import { ChatClient } from "./chat-client";
 
@@ -48,7 +48,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   }
 
   const sessionList = sessions ?? [];
-  const plan = PLANS.find((item) => item.id === profile?.active_plan);
+  const plan = profile?.active_plan ? await fetchPlanById(profile.active_plan) : null;
   const planName = plan?.name ?? (profile?.active_plan ? profile.active_plan.charAt(0).toUpperCase() + profile.active_plan.slice(1) : null);
   const isAdmin = ADMIN_EMAILS.includes(session.user.email?.toLowerCase() ?? "");
 

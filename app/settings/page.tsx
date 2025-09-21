@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { SettingsClient } from "./settings-client";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { PLANS } from "@/lib/plans";
+import { fetchPlanById } from "@/lib/plan-service";
 
 export default async function SettingsPage() {
   const supabase = createServerSupabaseClient();
@@ -20,7 +20,7 @@ export default async function SettingsPage() {
     .eq("id", session.user.id)
     .maybeSingle();
 
-  const plan = PLANS.find((item) => item.id === profile?.active_plan);
+  const plan = profile ? await fetchPlanById(profile.active_plan) : null;
 
   const metadataFullName =
     typeof session.user.user_metadata?.full_name === "string"

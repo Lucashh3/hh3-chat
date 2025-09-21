@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { callDeepSeek } from "@/lib/deepseek";
+import { performance } from "perf_hooks";
 import { checkSubscriptionStatus } from "@/lib/subscription";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/plans";
@@ -173,8 +174,35 @@ export async function POST(request: Request) {
     created_at: new Date().toISOString()
   };
 
-  // Chama a API DeepSeek já com o prompt de sistema configurado em lib/deepseek
-  const assistantResponse = await callDeepSeek([...messages, { role: "user", content }], systemPrompt);
+  const startedAt = performance.now();
+  let assistantResponse;
+  try {
+    assistantResponse = await callDeepSeek([...messages, { role: "user", content }], systemPrompt);
+    const durationMs = Math.round(performance.now() - startedAt);
+    const { error: promptLogError } = await supabase.from("prompt_usage_logs").insert({
+      user_id: session.user.id,
+      session_id: chatId!,
+      duration_ms: durationMs,
+      success: true
+    });
+    if (promptLogError) {
+      console.error("Não foi possível registrar métrica do DeepSeek", promptLogError);
+    }
+  } catch (error) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    try {
+      await supabase.from("prompt_usage_logs").insert({
+        user_id: session.user.id,
+        session_id: chatId!,
+        duration_ms: durationMs,
+        success: false,
+        error_text: error instanceof Error ? error.message : String(error)
+      });
+    } catch (logError) {
+      console.error("Não foi possível registrar métrica do DeepSeek", logError);
+    }
+    throw error;
+  }
 
   const assistantMessage = {
     id: assistantResponse.id,

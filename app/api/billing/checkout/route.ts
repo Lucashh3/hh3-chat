@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getPriceIdForPlan, stripe } from "@/lib/stripe";
+import { fetchPlanById } from "@/lib/plan-service";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import type { PlanId } from "@/lib/plans";
 
@@ -20,12 +21,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Plano não informado" }, { status: 400 });
   }
 
-  // Plano free não passa pelo Stripe, apenas atualiza o perfil no Supabase
-  if (plan === "free") {
+  const targetPlan = await fetchPlanById(plan);
+
+  if (!targetPlan) {
+    return NextResponse.json({ error: "Plano não encontrado" }, { status: 400 });
+  }
+
+  const isComplimentary =
+    plan === "free" ||
+    ((targetPlan.priceMonthly ?? 0) === 0 && (targetPlan.priceYearly ?? 0) === 0 && !targetPlan.stripePriceId);
+
+  // Plano gratuito não passa pelo Stripe, apenas atualiza o perfil no Supabase
+  if (isComplimentary) {
     await supabase
       .from("profiles")
       .update({
-        active_plan: "free",
+        active_plan: targetPlan.id,
         subscription_status: "active",
         stripe_subscription_id: null
       })
@@ -38,7 +49,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Stripe não configurado" }, { status: 500 });
   }
 
-  const priceId = getPriceIdForPlan(plan);
+  let priceId: string;
+  try {
+    priceId = await getPriceIdForPlan(plan, targetPlan);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Plano inválido" }, { status: 400 });
+  }
 
   const { data: profile } = await supabase
     .from("profiles")

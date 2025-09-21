@@ -2,12 +2,68 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { PLANS } from "@/lib/plans";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
+
+const isAdmin = (email: string | null | undefined) => ADMIN_EMAILS.includes(email?.toLowerCase() ?? "");
+
+const ensureSession = async (supabase: ReturnType<typeof createSupabaseRouteHandlerClient>) => {
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return { error: NextResponse.json({ error: "Não autenticado" }, { status: 401 }) } as const;
+  }
+
+  if (!isAdmin(session.user.email)) {
+    return { error: NextResponse.json({ error: "Acesso não permitido" }, { status: 403 }) } as const;
+  }
+
+  return { session } as const;
+};
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const userId = params.id;
+  const supabase = createSupabaseRouteHandlerClient();
+  const sessionCheck = await ensureSession(supabase);
+  if ("error" in sessionCheck) {
+    return sessionCheck.error;
+  }
+
+  const limitParam = new URL(request.url).searchParams.get("limit");
+  const sessionLimit = Math.min(25, Math.max(5, Number(limitParam) || 8));
+
+  const [{ data: profile, error: profileError }, { data: sessions, error: sessionsError }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "id, full_name, email, active_plan, subscription_status, cpf, phone, birth_date, is_blocked, created_at"
+      )
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("chat_sessions")
+      .select("id, title, updated_at")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(sessionLimit)
+  ]);
+
+  if (profileError || sessionsError) {
+    console.error(profileError ?? sessionsError);
+    return NextResponse.json({ error: "Não foi possível carregar o usuário" }, { status: 500 });
+  }
+
+  if (!profile) {
+    return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+  }
+
+  return NextResponse.json({ profile, sessions: sessions ?? [] });
+}
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const userId = params.id;
@@ -17,16 +73,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
   };
 
   const supabase = createSupabaseRouteHandlerClient();
-  const {
-    data: { session }
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-  }
-
-  if (!ADMIN_EMAILS.includes(session.user.email?.toLowerCase() ?? "")) {
-    return NextResponse.json({ error: "Acesso não permitido" }, { status: 403 });
+  const sessionCheck = await ensureSession(supabase);
+  if ("error" in sessionCheck) {
+    return sessionCheck.error;
   }
 
   if (!action) {
@@ -52,9 +101,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     case "updatePlan": {
-      const plan = typeof payload?.plan === "string" ? payload.plan : "";
-      if (!PLANS.some((item) => item.id === plan)) {
+      const plan = typeof payload?.plan === "string" ? payload.plan.trim() : "";
+      if (!plan) {
         return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
+      }
+
+      const { data: planRecord } = await supabase
+        .from("plans")
+        .select("id")
+        .eq("id", plan)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!planRecord) {
+        return NextResponse.json({ error: "Plano não encontrado ou inativo" }, { status: 400 });
       }
 
       const { error } = await supabase

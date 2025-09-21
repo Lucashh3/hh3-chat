@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
-import { PLANS, getPlanById, type PlanId } from "@/lib/plans";
+import type { Plan, PlanId } from "@/lib/plans";
+import { fetchPlanById, fetchPlanByStripePrice } from "@/lib/plan-service";
 
 const apiVersion: Stripe.LatestApiVersion = "2024-04-10";
 
@@ -14,8 +15,8 @@ export const stripe = secretKey
   ? new Stripe(secretKey, { apiVersion })
   : (undefined as unknown as Stripe);
 
-export const getPriceIdForPlan = (plan: PlanId) => {
-  const config = getPlanById(plan);
+export const getPriceIdForPlan = async (plan: PlanId, override?: Plan | null) => {
+  const config = override ?? (await fetchPlanById(plan));
   if (!config?.stripePriceId) {
     throw new Error(`Stripe price id missing for plan ${plan}`);
   }
@@ -35,8 +36,8 @@ export const getPortalUrl = async (customerId: string, returnUrl: string) => {
   return session.url;
 };
 
-export const resolvePlanFromPriceId = (priceId: string | null | undefined): PlanId | null => {
+export const resolvePlanFromPriceId = async (priceId: string | null | undefined): Promise<PlanId | null> => {
   if (!priceId) return null;
-  const plan = PLANS.find((plan) => plan.stripePriceId === priceId);
+  const plan = await fetchPlanByStripePrice(priceId);
   return plan?.id ?? null;
 };

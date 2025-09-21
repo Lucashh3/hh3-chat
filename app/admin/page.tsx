@@ -1,8 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { PLANS, DEFAULT_SYSTEM_PROMPT } from "@/lib/plans";
+import { DEFAULT_SYSTEM_PROMPT } from "@/lib/plans";
+import { fetchActivePlans } from "@/lib/plan-service";
 import { PromptEditor } from "@/components/admin/prompt-editor";
+import { Sparkline } from "@/components/admin/sparkline";
+import { StripeEventsTable, type StripeEventRow } from "@/components/admin/stripe-events-table";
 
 interface StatCardProps {
   title: string;
@@ -20,10 +23,45 @@ const StatCard = ({ title, value, helper }: StatCardProps) => (
   </Card>
 );
 
+type PromptUsageDailyRow = {
+  day: string;
+  total_calls: number;
+  avg_duration_ms: number | null;
+  success_calls: number;
+  failed_calls: number;
+};
+
+type SignupDailyRow = {
+  day: string;
+  total_signups: number;
+  paid_signups: number;
+};
+
+type ChatActivityDailyRow = {
+  day: string;
+  user_messages: number;
+  assistant_messages: number;
+};
+
+type StripeStatusRow = {
+  type: string;
+  processed: number;
+  errors: number;
+  last_received: string | null;
+  last_processed: string | null;
+};
+
 export default async function AdminPage() {
   const supabase = createServerSupabaseClient();
 
-  const [{ count: totalUsers }, { count: activeSubscribers }, { count: totalSessions }, { count: totalMessages }, promptSetting] = await Promise.all([
+  const [
+    { count: totalUsers },
+    { count: activeSubscribers },
+    { count: totalSessions },
+    { count: totalMessages },
+    promptSetting,
+    promptHistorySetting
+  ] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase
       .from("profiles")
@@ -35,12 +73,19 @@ export default async function AdminPage() {
       .from("admin_settings")
       .select("value, updated_at")
       .eq("key", "system_prompt")
+      .maybeSingle(),
+    supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "system_prompt_history")
       .maybeSingle()
   ]);
 
+  const plans = await fetchActivePlans();
+
   const planCounts: Record<string, number> = {};
   const planCountsResult = await Promise.all(
-    PLANS.map((plan) =>
+    plans.map((plan) =>
       supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
@@ -48,7 +93,7 @@ export default async function AdminPage() {
     )
   );
   planCountsResult.forEach((result, index) => {
-    planCounts[PLANS[index].name] = result.count ?? 0;
+    planCounts[plans[index].id] = result.count ?? 0;
   });
 
   const { data: recentUsers } = await supabase
@@ -63,8 +108,119 @@ export default async function AdminPage() {
     .order("updated_at", { ascending: false })
     .limit(8);
 
-  const promptValue = promptSetting?.data?.value ?? DEFAULT_SYSTEM_PROMPT;
+  const [
+    promptUsageDailyResult,
+    signupDailyResult,
+    chatActivityResult,
+    stripeEventsResult,
+    stripeStatusResult
+  ] = await Promise.all([
+    supabase
+      .from("prompt_usage_daily")
+      .select("day, total_calls, avg_duration_ms, success_calls, failed_calls")
+      .order("day", { ascending: false })
+      .limit(14),
+    supabase
+      .from("profiles_signups_daily")
+      .select("day, total_signups, paid_signups")
+      .order("day", { ascending: false })
+      .limit(14),
+    supabase
+      .from("chat_activity_daily")
+      .select("day, user_messages, assistant_messages")
+      .order("day", { ascending: false })
+      .limit(14),
+    supabase
+      .from("stripe_webhook_events")
+      .select("stripe_event_id, type, status, error_message, received_at, processed_at")
+      .order("received_at", { ascending: false })
+      .limit(10),
+    supabase.from("stripe_webhook_status").select(
+      "type, processed, errors, last_received, last_processed"
+    )
+  ]);
+
+  [promptUsageDailyResult.error, signupDailyResult.error, chatActivityResult.error, stripeEventsResult.error, stripeStatusResult.error]
+    .forEach((error) => {
+      if (error) {
+        console.error(error);
+      }
+    });
+
+  const promptUsageDaily = (promptUsageDailyResult.data as PromptUsageDailyRow[] | null) ?? [];
+  const promptUsageLatest = promptUsageDaily.slice(0, 7).reverse();
+
+  const signupsDaily = ((signupDailyResult.data as SignupDailyRow[] | null) ?? []).slice(0, 14).reverse();
+  const totalSignupsLast14 = signupsDaily.reduce((sum, row) => sum + (row.total_signups ?? 0), 0);
+  const totalPaidLast14 = signupsDaily.reduce((sum, row) => sum + (row.paid_signups ?? 0), 0);
+  const conversionRateLast14 = totalSignupsLast14
+    ? Math.round((totalPaidLast14 / totalSignupsLast14) * 100 * 10) / 10
+    : 0;
+  const lastSignupDay = signupsDaily.at(-1);
+
+  const signupSeries = signupsDaily.map((row) => row.total_signups ?? 0);
+  const paidSeries = signupsDaily.map((row) => row.paid_signups ?? 0);
+
+  const chatActivityDaily = ((chatActivityResult.data as ChatActivityDailyRow[] | null) ?? [])
+    .slice(0, 14)
+    .reverse();
+  const assistantMessageSeries = chatActivityDaily.map((row) => row.assistant_messages ?? 0);
+  const userMessageSeries = chatActivityDaily.map((row) => row.user_messages ?? 0);
+
+  const stripeEvents = (stripeEventsResult.data as StripeEventRow[] | null) ?? [];
+  const stripeStatus = (stripeStatusResult.data as StripeStatusRow[] | null) ?? [];
+  const stripeProcessedTotal = stripeStatus.reduce((acc, row) => acc + (row.processed ?? 0), 0);
+  const stripeErrorsTotal = stripeStatus.reduce((acc, row) => acc + (row.errors ?? 0), 0);
+  const stripeLastReceived = stripeStatus.reduce<string | null>((current, row) => {
+    if (!row.last_received) return current;
+    if (!current) return row.last_received;
+    return new Date(row.last_received) > new Date(current) ? row.last_received : current;
+  }, null);
+
+  const parseHistory = (value?: string | null) => {
+    if (!value) return [] as { prompt: string; updatedAt: string | null }[];
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((entry) => typeof entry === "object" && entry && typeof entry.prompt === "string")
+        .map((entry) => ({
+          prompt: entry.prompt as string,
+          updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : null
+        }));
+    } catch (error) {
+      console.error("Falha ao interpretar histórico do prompt", error);
+      return [] as { prompt: string; updatedAt: string | null }[];
+    }
+  };
+
+  const promptValue = typeof promptSetting?.data?.value === "string" ? promptSetting.data.value : DEFAULT_SYSTEM_PROMPT;
   const promptUpdatedAt = promptSetting?.data?.updated_at ?? null;
+  const promptHistory = parseHistory(promptHistorySetting?.data?.value ?? null);
+  const formatDayLabel = (value: string) =>
+    new Date(value).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit"
+    });
+  const formatDateTime = (value: string | null) =>
+    value
+      ? new Date(value).toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      : "-";
+
+  const promptCallsLast7 = promptUsageLatest.reduce((sum, row) => sum + (row.total_calls ?? 0), 0);
+  const promptFailuresLast7 = promptUsageLatest.reduce((sum, row) => sum + (row.failed_calls ?? 0), 0);
+  const promptAvgLatencyLast7 = promptUsageLatest.length
+    ? Math.round(
+        promptUsageLatest.reduce((sum, row) => sum + (row.avg_duration_ms ?? 0), 0) /
+          promptUsageLatest.length
+      )
+    : null;
 
   return (
     <div className="space-y-8 px-4 py-8 sm:px-6">
@@ -105,7 +261,7 @@ export default async function AdminPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PromptEditor initialPrompt={promptValue} updatedAt={promptUpdatedAt} />
+          <PromptEditor initialPrompt={promptValue} updatedAt={promptUpdatedAt} history={promptHistory} />
         </CardContent>
       </Card>
 
@@ -116,10 +272,10 @@ export default async function AdminPage() {
             <CardDescription>Entenda onde estão seus usuários e identifique oportunidades de upsell.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {PLANS.map((plan) => (
+            {plans.map((plan) => (
               <div key={plan.id} className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2">
                 <span className="font-medium">{plan.name}</span>
-                <span className="text-muted-foreground">{planCounts[plan.name]?.toLocaleString("pt-BR") ?? 0}</span>
+                <span className="text-muted-foreground">{planCounts[plan.id]?.toLocaleString("pt-BR") ?? 0}</span>
               </div>
             ))}
           </CardContent>
@@ -143,6 +299,150 @@ export default async function AdminPage() {
             ) : (
               <p className="text-sm text-muted-foreground">Nenhum chat encontrado.</p>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle>Novos cadastros</CardTitle>
+            <CardDescription>Últimos 14 dias</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Sparkline data={signupSeries} className="text-primary" />
+            <div className="grid gap-2 text-sm">
+              <p className="flex items-center justify-between">
+                <span>Total no período</span>
+                <span className="font-semibold">{totalSignupsLast14.toLocaleString("pt-BR")}</span>
+              </p>
+              <p className="flex items-center justify-between text-muted-foreground">
+                <span>Último dia ({lastSignupDay ? formatDayLabel(lastSignupDay.day) : "-"})</span>
+                <span>{(lastSignupDay?.total_signups ?? 0).toLocaleString("pt-BR")}</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle>Conversões para planos pagos</CardTitle>
+            <CardDescription>Novos clientes Pro/VIP nos últimos 14 dias</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Sparkline data={paidSeries} className="text-emerald-500" />
+            <div className="grid gap-2 text-sm">
+              <p className="flex items-center justify-between">
+                <span>Total pagos no período</span>
+                <span className="font-semibold">{totalPaidLast14.toLocaleString("pt-BR")}</span>
+              </p>
+              <p className="flex items-center justify-between text-muted-foreground">
+                <span>Taxa de conversão (14 dias)</span>
+                <span>{conversionRateLast14.toLocaleString("pt-BR")}%</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle>Mensagens por dia</CardTitle>
+            <CardDescription>Comparativo usuários vs HH3 (14 dias)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div>
+              <p className="mb-1 text-xs uppercase text-muted-foreground">Usuários</p>
+              <Sparkline data={userMessageSeries} className="text-sky-500" />
+            </div>
+            <div>
+              <p className="mb-1 text-xs uppercase text-muted-foreground">HH3</p>
+              <Sparkline data={assistantMessageSeries} className="text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Uso do prompt DeepSeek</CardTitle>
+            <CardDescription>Resumo das últimas 7 janelas diárias</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid gap-2 rounded-md border bg-muted/30 p-3 text-xs">
+              <span className="flex items-center justify-between">
+                <span>Chamadas</span>
+                <span className="font-semibold">{promptCallsLast7.toLocaleString("pt-BR")}</span>
+              </span>
+              <span className="flex items-center justify-between">
+                <span>Falhas</span>
+                <span>{promptFailuresLast7.toLocaleString("pt-BR")}</span>
+              </span>
+              <span className="flex items-center justify-between">
+                <span>Latência média</span>
+                <span>{promptAvgLatencyLast7 !== null ? `${promptAvgLatencyLast7} ms` : "-"}</span>
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[420px] text-xs">
+                <thead className="text-left uppercase text-muted-foreground">
+                  <tr className="border-b">
+                    <th className="py-2 pr-4">Dia</th>
+                    <th className="py-2 pr-4">Chamadas</th>
+                    <th className="py-2 pr-4">Sucesso</th>
+                    <th className="py-2 pr-4">Falhas</th>
+                    <th className="py-2">Latência média</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {promptUsageLatest.length ? (
+                    promptUsageLatest.map((row) => (
+                      <tr key={row.day} className="border-b last:border-0">
+                        <td className="py-2 pr-4 font-medium">{formatDayLabel(row.day)}</td>
+                        <td className="py-2 pr-4">{row.total_calls.toLocaleString("pt-BR")}</td>
+                        <td className="py-2 pr-4 text-emerald-600">{row.success_calls.toLocaleString("pt-BR")}</td>
+                        <td className="py-2 pr-4 text-destructive">{row.failed_calls.toLocaleString("pt-BR")}</td>
+                        <td className="py-2 text-muted-foreground">
+                          {row.avg_duration_ms !== null ? `${Math.round(row.avg_duration_ms)} ms` : "-"}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-4 text-center text-muted-foreground">
+                        Nenhum dado registrado nos últimos dias.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Webhooks Stripe</CardTitle>
+            <CardDescription>Monitoramento das últimas notificações recebidas</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid gap-2 rounded-md border bg-muted/30 p-3 text-xs">
+              <span className="flex items-center justify-between">
+                <span>Processados (30 dias)</span>
+                <span className="font-semibold">{stripeProcessedTotal.toLocaleString("pt-BR")}</span>
+              </span>
+              <span className="flex items-center justify-between">
+                <span>Falhas (30 dias)</span>
+                <span className={stripeErrorsTotal ? "text-destructive" : "text-muted-foreground"}>
+                  {stripeErrorsTotal.toLocaleString("pt-BR")}
+                </span>
+              </span>
+              <span className="flex items-center justify-between">
+                <span>Último evento</span>
+                <span>{formatDateTime(stripeLastReceived)}</span>
+              </span>
+            </div>
+            <StripeEventsTable events={stripeEvents} />
           </CardContent>
         </Card>
       </div>

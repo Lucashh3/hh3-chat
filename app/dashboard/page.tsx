@@ -5,7 +5,7 @@ import { SubscriptionActions } from "@/components/dashboard/subscription-actions
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PLANS } from "@/lib/plans";
+import { fetchActivePlans } from "@/lib/plan-service";
 import { checkSubscriptionStatus } from "@/lib/subscription";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -35,6 +35,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: R
     .limit(10);
 
   const currentPlan = profile?.active_plan ?? "free";
+  const plans = await fetchActivePlans();
+  const planDetails = plans.find((plan) => plan.id === currentPlan);
 
   return (
     <div className="container grid gap-6 py-10">
@@ -56,12 +58,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: R
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-lg font-semibold capitalize">{currentPlan}</p>
-              <p className="text-sm text-muted-foreground">
-                {PLANS.find((plan) => plan.id === currentPlan)?.description}
-              </p>
+              <p className="text-lg font-semibold capitalize">{planDetails?.name ?? currentPlan}</p>
+              <p className="text-sm text-muted-foreground">{planDetails?.description}</p>
             </div>
-            <SubscriptionActions currentPlan={currentPlan} plans={PLANS} />
+            <SubscriptionActions currentPlan={currentPlan} plans={plans} />
           </CardContent>
         </Card>
 

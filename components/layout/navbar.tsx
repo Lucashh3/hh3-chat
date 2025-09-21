@@ -12,7 +12,7 @@ import {
   NavigationMenuTrigger
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { PLANS } from "@/lib/plans";
+import type { Plan } from "@/lib/plans";
 
 const NAV_ITEMS = [
   { label: "Método 3", href: "#features" },
@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { label: "Mentoria", href: "#how-it-works" }
 ];
 
-export function Navbar({ authenticated }: { authenticated: boolean }) {
+export function Navbar({ authenticated, plans }: { authenticated: boolean; plans: Plan[] }) {
   const pathname = usePathname();
 
   return (
@@ -42,7 +42,7 @@ export function Navbar({ authenticated }: { authenticated: boolean }) {
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Planos</NavigationMenuTrigger>
                 <NavigationMenuContent className="grid w-[320px] gap-3 p-4">
-                  {PLANS.map((plan) => (
+                  {plans.map((plan) => (
                     <Link
                       href={pathname === "/" ? "#pricing" : "/#pricing"}
                       key={plan.id}

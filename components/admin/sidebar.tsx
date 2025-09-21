@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { label: "Visão geral", href: "/admin" },
   { label: "Usuários", href: "/admin/users" },
-  { label: "Configurações", href: "/admin/settings", disabled: true }
+  { label: "Configurações", href: "/admin/settings" }
 ];
 
 export function AdminSidebar() {
@@ -20,18 +20,6 @@ export function AdminSidebar() {
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
-          if (item.disabled) {
-            return (
-              <div
-                key={item.href}
-                className="cursor-not-allowed rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/60"
-              >
-                {item.label}
-                <span className="ml-2 text-xs text-muted-foreground/50">Em breve</span>
-              </div>
-            );
-          }
-
           return (
             <Link
               key={item.href}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { UsersTable, type AdminUserRow } from "@/components/admin/users-table";
+import { fetchActivePlans } from "@/lib/plan-service";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const PAGE_SIZE = 20;
@@ -46,7 +47,10 @@ export default async function AdminUsersPage({
     );
   }
 
-  if (planParam && ["free", "pro", "vip"].includes(planParam)) {
+  const plans = await fetchActivePlans();
+  const planIds = plans.map((plan) => plan.id);
+
+  if (planParam && planIds.includes(planParam)) {
     baseQuery.eq("active_plan", planParam);
   }
 
@@ -76,7 +80,7 @@ export default async function AdminUsersPage({
     phone: user.phone,
     birth_date: user.birth_date,
     created_at: user.created_at,
-     is_blocked: Boolean(user.is_blocked),
+    is_blocked: Boolean(user.is_blocked),
     chat_count: 0,
     last_chat_at: null
   }));
@@ -112,6 +116,12 @@ export default async function AdminUsersPage({
     }
   }
 
+  const total = count ?? 0;
+  const blockedCount = users.filter((user) => user.is_blocked).length;
+  const activeCount = users.filter((user) => !user.is_blocked && user.subscription_status === "active").length;
+  const payingPlanIds = plans.filter((plan) => plan.priceMonthly > 0 || (plan.priceYearly ?? 0) > 0).map((plan) => plan.id);
+  const payingCount = users.filter((user) => payingPlanIds.includes(user.active_plan ?? "")).length;
+
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6">
       <div className="space-y-1">
@@ -123,7 +133,11 @@ export default async function AdminUsersPage({
 
       <UsersTable
         users={users}
-        total={count ?? 0}
+        total={total}
+        blocked={blockedCount}
+        active={activeCount}
+        paying={payingCount}
+        plans={plans}
         page={page}
         pageSize={PAGE_SIZE}
         query={query ?? ""}
