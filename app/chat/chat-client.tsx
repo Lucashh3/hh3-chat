@@ -23,9 +23,10 @@ interface ChatClientProps {
   userName: string | null;
   userEmail: string | null;
   planName: string | null;
+  isAdmin: boolean;
 }
 
-export function ChatClient({ initialMessages, initialChatId, sessions, userName, userEmail, planName }: ChatClientProps) {
+export function ChatClient({ initialMessages, initialChatId, sessions, userName, userEmail, planName, isAdmin }: ChatClientProps) {
   const {
     messages,
     input,
@@ -49,6 +50,11 @@ export function ChatClient({ initialMessages, initialChatId, sessions, userName,
     const active = sessionList.find((session) => session.id === chatId);
     return active?.title ?? "Chat sem título";
   }, [chatId, sessionList]);
+
+  const resolvedPlanName = useMemo(() => {
+    if (!planName) return null;
+    return planName;
+  }, [planName]);
 
   const userInitials = useMemo(() => {
     if (userName && userName.trim().length > 0) {
@@ -179,10 +185,15 @@ export function ChatClient({ initialMessages, initialChatId, sessions, userName,
                   <div className="absolute right-0 z-20 mt-3 w-64 rounded-lg border bg-card p-3 text-sm shadow-lg">
                     <div className="border-b pb-2">
                       <p className="font-semibold">{userName ?? userEmail ?? "Usuário HH3"}</p>
-                      {planName && <p className="text-xs text-muted-foreground">Plano: {planName}</p>}
+                      {resolvedPlanName && <p className="text-xs text-muted-foreground">Plano: {resolvedPlanName}</p>}
                       {userEmail && <p className="text-xs text-muted-foreground">{userEmail}</p>}
                     </div>
                     <div className="mt-2 flex flex-col gap-1">
+                      {isAdmin && (
+                        <Button variant="ghost" className="justify-start" asChild onClick={() => setUserMenuOpen(false)}>
+                          <a href="/admin">Painel administrativo</a>
+                        </Button>
+                      )}
                       <Button variant="ghost" className="justify-start" asChild onClick={() => setUserMenuOpen(false)}>
                         <a href="/settings">Configurações</a>
                       </Button>

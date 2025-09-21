@@ -33,29 +33,29 @@ export default async function LandingPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar authenticated={Boolean(session)} />
       <main className="flex-1">
-        <section className="container flex flex-col items-center justify-center gap-8 py-20 text-center">
+        <section className="container flex flex-col items-center justify-center gap-8 px-4 py-16 text-center sm:px-6 sm:py-20">
           <Badge variant="secondary">Mentoria HH3 de Roleta Europeia</Badge>
           <div className="max-w-3xl space-y-6">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+            <h1 className="text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl">
               Transforme cada giro com o mentor HH3 no seu chat
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-base text-muted-foreground sm:text-lg">
               HH3, especialista em roleta europeia, compartilha o Método 3 – Estratégia de Zonas diretamente no chat.
               Envie a sequência mais recente e receba o alvo ideal com cobertura, vizinhos e avaliação do sinal.
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button size="lg" asChild>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
+            <Button size="lg" className="w-full sm:w-auto" asChild>
               <Link href="/auth/register">Liberar acesso gratuito</Link>
             </Button>
-            <Button variant="outline" size="lg" asChild>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
               <Link href="/auth/login">Já estudo com o HH3</Link>
             </Button>
           </div>
         </section>
 
-        <section id="features" className="border-t bg-muted/30 py-16">
-          <div className="container grid gap-6 md:grid-cols-3">
+        <section id="features" className="border-t bg-muted/30 py-12 sm:py-16">
+          <div className="container grid gap-6 px-4 sm:px-6 md:grid-cols-3">
             {FEATURE_ITEMS.map((feature) => (
               <Card key={feature.title}>
                 <CardHeader>
@@ -67,23 +67,23 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="container py-20">
-          <div className="text-center">
+        <section id="pricing" className="container px-4 py-16 sm:px-6 sm:py-20">
+          <div className="space-y-2 text-center">
             <Badge variant="secondary">Escolha o nível de mentoria</Badge>
             <h2 className="mt-4 text-3xl font-semibold">Planos do método HH3</h2>
             <p className="mt-2 text-muted-foreground">Assinaturas recorrentes com upgrade instantâneo para liberar mais análises e suporte.</p>
           </div>
           <Tabs defaultValue="monthly" className="mt-10 flex flex-col gap-6">
-            <TabsList className="self-center">
+            <TabsList className="self-center flex-wrap gap-2">
               <TabsTrigger value="monthly">Mensal</TabsTrigger>
               <TabsTrigger value="yearly">Anual</TabsTrigger>
             </TabsList>
-            <TabsContent value="monthly" className="grid gap-6 md:grid-cols-3">
+            <TabsContent value="monthly" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {PLANS.map((plan) => (
                 <PlanCard key={plan.id} plan={plan} billingCycle="monthly" />
               ))}
             </TabsContent>
-            <TabsContent value="yearly" className="grid gap-6 md:grid-cols-3">
+            <TabsContent value="yearly" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {PLANS.map((plan) => (
                 <PlanCard key={plan.id} plan={plan} billingCycle="yearly" />
               ))}
@@ -91,8 +91,8 @@ export default async function LandingPage() {
           </Tabs>
         </section>
 
-        <section id="how-it-works" className="border-t py-16">
-          <div className="container grid gap-8 md:grid-cols-3">
+        <section id="how-it-works" className="border-t py-12 sm:py-16">
+          <div className="container grid gap-8 px-4 sm:px-6 sm:grid-cols-2 md:grid-cols-3">
             {[
               {
                 title: "1. Ative seu acesso HH3",
@@ -118,7 +118,7 @@ export default async function LandingPage() {
         </section>
       </main>
       <footer className="border-t py-8">
-        <div className="container flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground md:flex-row">
+        <div className="container flex flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:px-6 md:flex-row">
           <p>© {new Date().getFullYear()} HH3. Todos os direitos reservados.</p>
           <div className="flex gap-4">
             <Link className="hover:text-foreground" href="#pricing">
@@ -145,9 +145,9 @@ function PlanCard({ plan, billingCycle }: PlanCardProps) {
   return (
     <Card className={plan.id === "pro" ? "border-primary shadow-lg" : undefined}>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-2xl">
-          {plan.name}
-          {plan.id === "pro" && <Badge>Popular</Badge>}
+        <CardTitle className="flex flex-col items-start justify-between gap-2 text-left text-2xl sm:flex-row sm:items-center">
+          <span>{plan.name}</span>
+          {plan.id === "pro" && <Badge className="w-fit">Popular</Badge>}
         </CardTitle>
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>

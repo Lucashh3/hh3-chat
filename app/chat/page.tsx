@@ -6,6 +6,11 @@ import { PLANS } from "@/lib/plans";
 
 import { ChatClient } from "./chat-client";
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
 interface ChatPageProps {
   searchParams?: Record<string, string | string[]>;
 }
@@ -44,6 +49,8 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
 
   const sessionList = sessions ?? [];
   const plan = PLANS.find((item) => item.id === profile?.active_plan);
+  const planName = plan?.name ?? (profile?.active_plan ? profile.active_plan.charAt(0).toUpperCase() + profile.active_plan.slice(1) : null);
+  const isAdmin = ADMIN_EMAILS.includes(session.user.email?.toLowerCase() ?? "");
 
   const requestedChatId = typeof searchParams?.chatId === "string" ? searchParams.chatId : null;
   let activeChatId: string | null = null;
@@ -76,9 +83,10 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
       initialMessages={chatHistory}
       initialChatId={activeChatId}
       sessions={sessionList}
-      userName={profile?.full_name ?? session.user.user_metadata?.full_name ?? null}
+      userName={profile?.full_name ?? (typeof session.user.user_metadata?.full_name === "string" ? (session.user.user_metadata.full_name as string) : null)}
       userEmail={session.user.email ?? null}
-      planName={plan?.name ?? "Iniciante HH3"}
+      planName={planName}
+      isAdmin={isAdmin}
     />
   );
 }

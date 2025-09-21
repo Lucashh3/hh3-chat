@@ -165,9 +165,9 @@ export function SettingsClient({ plan, profile, userEmail, userCreatedAt }: Sett
   };
 
   return (
-    <div className="container space-y-8 py-10">
-      <div>
-        <h1 className="text-3xl font-semibold">Configurações</h1>
+    <div className="container space-y-8 px-4 py-8 sm:px-6 sm:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Configurações</h1>
         <p className="text-sm text-muted-foreground">Gerencie seus dados, preferências e segurança da conta.</p>
       </div>
 
