@@ -30,11 +30,15 @@ interface UsersTableProps {
   page: number;
   pageSize: number;
   query: string;
+  planFilter: string;
+  statusFilter: string;
 }
 
-export function UsersTable({ users, total, page, pageSize, query }: UsersTableProps) {
+export function UsersTable({ users, total, page, pageSize, query, planFilter, statusFilter }: UsersTableProps) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(users[0]?.id ?? null);
   const [search, setSearch] = useState(query);
+  const [plan, setPlan] = useState(planFilter);
+  const [status, setStatus] = useState(statusFilter);
   const [selectedPlan, setSelectedPlan] = useState<string>(users[0]?.active_plan ?? "free");
   const [blocked, setBlocked] = useState<boolean>(users[0]?.is_blocked ?? false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -60,6 +64,16 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
     } else {
       params.delete("q");
     }
+    if (plan) {
+      params.set("plan", plan);
+    } else {
+      params.delete("plan");
+    }
+    if (status) {
+      params.set("status", status);
+    } else {
+      params.delete("status");
+    }
     params.delete("page");
 
     startTransition(() => {
@@ -71,11 +85,45 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
     const safePage = Math.min(Math.max(1, nextPage), totalPages);
     const params = new URLSearchParams(searchParams);
     if (search) params.set("q", search);
+    if (plan) params.set("plan", plan);
+    else params.delete("plan");
+    if (status) params.set("status", status);
+    else params.delete("status");
     params.set("page", safePage.toString());
 
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
     });
+  };
+
+  const exportCsv = async () => {
+    try {
+      const params = new URLSearchParams(searchParams);
+      if (search) params.set("q", search);
+      if (plan) params.set("plan", plan);
+      if (status) params.set("status", status);
+      const response = await fetch(`/api/admin/users/export?${params.toString()}`);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Não foi possível gerar o CSV");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `usuarios-hh3-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Não foi possível gerar o CSV.",
+        variant: "destructive"
+      });
+    }
   };
 
   const performAction = async (action: string, payload?: Record<string, unknown>) => {
@@ -147,15 +195,43 @@ export function UsersTable({ users, total, page, pageSize, query }: UsersTablePr
               <CardTitle className="text-lg">Lista de usuários</CardTitle>
               <CardDescription>Filtre por nome, e-mail, CPF ou telefone.</CardDescription>
             </div>
-            <form className="flex w-full max-w-sm items-center gap-2" onSubmit={handleSearch}>
+            <form className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row" onSubmit={handleSearch}>
               <Input
                 placeholder="Buscar usuário..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
+                className="sm:flex-1"
               />
-              <Button type="submit" disabled={isPending}>
-                Buscar
-              </Button>
+              <select
+                value={plan}
+                onChange={(event) => setPlan(event.target.value)}
+                className="rounded-md border bg-transparent px-3 py-2 text-sm"
+              >
+                <option value="">Todos os planos</option>
+                <option value="free">Iniciante HH3</option>
+                <option value="pro">Mentoria Pro</option>
+                <option value="vip">Mentoria Elite</option>
+              </select>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="rounded-md border bg-transparent px-3 py-2 text-sm"
+              >
+                <option value="">Todos os status</option>
+                <option value="active">Ativa</option>
+                <option value="trialing">Teste</option>
+                <option value="past_due">Pagamento em atraso</option>
+                <option value="canceled">Cancelada</option>
+                <option value="blocked">Bloqueada</option>
+              </select>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={isPending}>
+                  Buscar
+                </Button>
+                <Button type="button" variant="outline" onClick={exportCsv}>
+                  Exportar CSV
+                </Button>
+              </div>
             </form>
           </div>
         </CardHeader>

@@ -21,6 +21,8 @@ export default async function AdminUsersPage({
 
   const pageParam = Array.isArray(searchParams?.page) ? searchParams?.page[0] : searchParams?.page;
   const queryParam = Array.isArray(searchParams?.q) ? searchParams?.q[0] : searchParams?.q;
+  const planParam = Array.isArray(searchParams?.plan) ? searchParams?.plan[0] : searchParams?.plan;
+  const statusParam = Array.isArray(searchParams?.status) ? searchParams?.status[0] : searchParams?.status;
 
   const page = Math.max(1, Number(pageParam) || 1);
   const from = (page - 1) * PAGE_SIZE;
@@ -42,6 +44,19 @@ export default async function AdminUsersPage({
     baseQuery.or(
       `email.ilike.%${query}%,full_name.ilike.%${query}%,cpf.ilike.%${query}%,phone.ilike.%${query}%`
     );
+  }
+
+  if (planParam && ["free", "pro", "vip"].includes(planParam)) {
+    baseQuery.eq("active_plan", planParam);
+  }
+
+  if (statusParam) {
+    if (statusParam === "blocked") {
+      baseQuery.eq("is_blocked", true);
+    } else if (["active", "trialing", "past_due", "canceled"].includes(statusParam)) {
+      baseQuery.eq("subscription_status", statusParam);
+      baseQuery.eq("is_blocked", false);
+    }
   }
 
   const { data: profiles, error, count } = await baseQuery;
@@ -112,6 +127,8 @@ export default async function AdminUsersPage({
         page={page}
         pageSize={PAGE_SIZE}
         query={query ?? ""}
+        planFilter={planParam ?? ""}
+        statusFilter={statusParam ?? ""}
       />
     </div>
   );
