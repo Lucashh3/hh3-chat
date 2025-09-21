@@ -42,7 +42,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não foi possível carregar o evento" }, { status: 500 });
   }
 
-  if (!record?.payload) {
+  const payload = record?.payload as unknown;
+
+  if (!payload) {
     return NextResponse.json({ error: "Evento não encontrado" }, { status: 404 });
   }
 
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
   let errorMessage: string | null = null;
 
   try {
-    await applyStripeEvent(record.payload as any, adminClient);
+    await applyStripeEvent(payload as any, adminClient);
   } catch (replayError) {
     status = "error";
     errorMessage = replayError instanceof Error ? replayError.message : String(replayError);

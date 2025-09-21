@@ -25,6 +25,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if (!profile?.is_admin) {
+    await supabase
+      .from("profiles")
+      .update({ is_admin: true })
+      .eq("id", session.user.id);
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
