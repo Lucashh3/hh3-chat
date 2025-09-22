@@ -32,20 +32,18 @@ export async function POST(request: Request) {
 
   const adminClient = createAdminSupabaseClient();
 
-  const { data: record, error } = (await adminClient
+  const { data: record, error } = await adminClient
     .from("stripe_webhook_events")
     .select("payload")
     .eq("stripe_event_id", eventId)
-    .maybeSingle<{
-      payload: Database["public"]["Tables"]["stripe_webhook_events"]["Row"]["payload"];
-    }>();
+    .maybeSingle();
 
   if (error) {
     console.error(error);
     return NextResponse.json({ error: "Não foi possível carregar o evento" }, { status: 500 });
   }
 
-  const payload = record?.payload as unknown;
+  const payload = record?.payload as Database["public"]["Tables"]["stripe_webhook_events"]["Row"]["payload"];
 
   if (!payload) {
     return NextResponse.json({ error: "Evento não encontrado" }, { status: 404 });
