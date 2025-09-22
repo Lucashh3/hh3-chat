@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { applyStripeEvent } from "@/lib/stripe-events";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import type { Database } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -45,19 +46,18 @@ export async function POST(request: Request) {
   }
 
   try {
+    const upsertPayload: Database["public"]["Tables"]["stripe_webhook_events"]["Insert"] = {
+      stripe_event_id: event.id,
+      type: event.type,
+      status,
+      error_message: errorMessage,
+      payload: eventPayload,
+      processed_at: status === "processed" ? new Date().toISOString() : null
+    };
+
     await supabase
       .from("stripe_webhook_events")
-      .upsert(
-        {
-          stripe_event_id: event.id,
-          type: event.type,
-          status,
-          error_message: errorMessage,
-          payload: eventPayload,
-          processed_at: status === "processed" ? new Date().toISOString() : null
-        },
-        { onConflict: "stripe_event_id" }
-      );
+      .upsert(upsertPayload, { onConflict: "stripe_event_id" });
   } catch (logError) {
     console.error("Failed to persist Stripe webhook event", logError);
   }
