@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import Stripe from "stripe";
+
 import { applyStripeEvent } from "@/lib/stripe-events";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não foi possível carregar o evento" }, { status: 500 });
   }
 
-  const payload = record?.payload;
+  const payload = (record?.payload as Stripe.Event | null) ?? null;
 
   if (!payload) {
     return NextResponse.json({ error: "Evento não encontrado" }, { status: 404 });
@@ -61,16 +63,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upsertPayload: Database["public"]["Tables"]["stripe_webhook_events"]["Insert"] = {
-      stripe_event_id: eventId,
-      status,
-      error_message: errorMessage,
-      processed_at: status === "processed" ? new Date().toISOString() : null
-    };
-
     await adminClient
       .from("stripe_webhook_events")
-      .upsert(upsertPayload, { onConflict: "stripe_event_id" });
+      .upsert(
+        {
+          stripe_event_id: eventId,
+          status,
+          error_message: errorMessage,
+          processed_at: status === "processed" ? new Date().toISOString() : null
+        } as Database["public"]["Tables"]["stripe_webhook_events"]["Insert"],
+        { onConflict: "stripe_event_id" }
+      );
   } catch (logError) {
     console.error("Não foi possível atualizar status do webhook", logError);
   }
