@@ -14,18 +14,5 @@ export const checkSubscriptionStatus = (profile: Database["public"]["Tables"]["p
     return { isActive: false, reason: "Nenhum perfil encontrado" };
   }
 
-  if (profile.active_plan === "free") {
-    return { isActive: true };
-  }
-
-  if (!profile.subscription_status) {
-    return { isActive: false, reason: "Assinatura não encontrada" };
-  }
-
-  return {
-    isActive: ACTIVE_STATUSES.includes(profile.subscription_status),
-    reason: ACTIVE_STATUSES.includes(profile.subscription_status)
-      ? undefined
-      : "Assinatura inativa"
-  };
+  return { isActive: true };
 };

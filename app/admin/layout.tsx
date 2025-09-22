@@ -21,17 +21,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const email = session.user.email?.toLowerCase() ?? "";
-  if (!ADMIN_EMAILS.includes(email)) {
-    redirect("/");
-  }
-
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", session.user.id)
     .maybeSingle();
 
-  if (!profile?.is_admin) {
+  const isAdmin = Boolean(profile?.is_admin);
+
+  if (!isAdmin && !ADMIN_EMAILS.includes(email)) {
+    redirect("/");
+  }
+
+  if (!isAdmin && ADMIN_EMAILS.includes(email)) {
     await supabase
       .from("profiles")
       .update({ is_admin: true })
