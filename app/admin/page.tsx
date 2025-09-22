@@ -5,7 +5,6 @@ import { DEFAULT_SYSTEM_PROMPT } from "@/lib/plans";
 import { fetchActivePlans } from "@/lib/plan-service";
 import { PromptEditor } from "@/components/admin/prompt-editor";
 import { Sparkline } from "@/components/admin/sparkline";
-import { StripeEventsTable, type StripeEventRow } from "@/components/admin/stripe-events-table";
 
 interface StatCardProps {
   title: string;
@@ -41,14 +40,6 @@ type ChatActivityDailyRow = {
   day: string;
   user_messages: number;
   assistant_messages: number;
-};
-
-type StripeStatusRow = {
-  type: string;
-  processed: number;
-  errors: number;
-  last_received: string | null;
-  last_processed: string | null;
 };
 
 export default async function AdminPage() {
@@ -111,9 +102,7 @@ export default async function AdminPage() {
   const [
     promptUsageDailyResult,
     signupDailyResult,
-    chatActivityResult,
-    stripeEventsResult,
-    stripeStatusResult
+    chatActivityResult
   ] = await Promise.all([
     supabase
       .from("prompt_usage_daily")
@@ -129,18 +118,10 @@ export default async function AdminPage() {
       .from("chat_activity_daily")
       .select("day, user_messages, assistant_messages")
       .order("day", { ascending: false })
-      .limit(14),
-    supabase
-      .from("stripe_webhook_events")
-      .select("stripe_event_id, type, status, error_message, received_at, processed_at")
-      .order("received_at", { ascending: false })
-      .limit(10),
-    supabase.from("stripe_webhook_status").select(
-      "type, processed, errors, last_received, last_processed"
-    )
+      .limit(14)
   ]);
 
-  [promptUsageDailyResult.error, signupDailyResult.error, chatActivityResult.error, stripeEventsResult.error, stripeStatusResult.error]
+  [promptUsageDailyResult.error, signupDailyResult.error, chatActivityResult.error]
     .forEach((error) => {
       if (error) {
         console.error(error);
@@ -167,16 +148,6 @@ export default async function AdminPage() {
   const assistantMessageSeries = chatActivityDaily.map((row) => row.assistant_messages ?? 0);
   const userMessageSeries = chatActivityDaily.map((row) => row.user_messages ?? 0);
 
-  const stripeEvents = (stripeEventsResult.data as StripeEventRow[] | null) ?? [];
-  const stripeStatus = (stripeStatusResult.data as StripeStatusRow[] | null) ?? [];
-  const stripeProcessedTotal = stripeStatus.reduce((acc, row) => acc + (row.processed ?? 0), 0);
-  const stripeErrorsTotal = stripeStatus.reduce((acc, row) => acc + (row.errors ?? 0), 0);
-  const stripeLastReceived = stripeStatus.reduce<string | null>((current, row) => {
-    if (!row.last_received) return current;
-    if (!current) return row.last_received;
-    return new Date(row.last_received) > new Date(current) ? row.last_received : current;
-  }, null);
-
   const parseHistory = (value?: string | null) => {
     if (!value) return [] as { prompt: string; updatedAt: string | null }[];
     try {
@@ -202,17 +173,6 @@ export default async function AdminPage() {
       day: "2-digit",
       month: "2-digit"
     });
-  const formatDateTime = (value: string | null) =>
-    value
-      ? new Date(value).toLocaleString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit"
-        })
-      : "-";
-
   const promptCallsLast7 = promptUsageLatest.reduce((sum, row) => sum + (row.total_calls ?? 0), 0);
   const promptFailuresLast7 = promptUsageLatest.reduce((sum, row) => sum + (row.failed_calls ?? 0), 0);
   const promptAvgLatencyLast7 = promptUsageLatest.length
@@ -417,32 +377,6 @@ export default async function AdminPage() {
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Webhooks Stripe</CardTitle>
-            <CardDescription>Monitoramento das últimas notificações recebidas</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div className="grid gap-2 rounded-md border bg-muted/30 p-3 text-xs">
-              <span className="flex items-center justify-between">
-                <span>Processados (30 dias)</span>
-                <span className="font-semibold">{stripeProcessedTotal.toLocaleString("pt-BR")}</span>
-              </span>
-              <span className="flex items-center justify-between">
-                <span>Falhas (30 dias)</span>
-                <span className={stripeErrorsTotal ? "text-destructive" : "text-muted-foreground"}>
-                  {stripeErrorsTotal.toLocaleString("pt-BR")}
-                </span>
-              </span>
-              <span className="flex items-center justify-between">
-                <span>Último evento</span>
-                <span>{formatDateTime(stripeLastReceived)}</span>
-              </span>
-            </div>
-            <StripeEventsTable events={stripeEvents} />
           </CardContent>
         </Card>
       </div>
