@@ -16,22 +16,8 @@ export type EnvStatus = {
 
 const CRITICAL_ENVS: EnvCheck[] = [
   { key: "DEEPSEEK_API_KEY", label: "DeepSeek API Key", required: true },
-  { key: "STRIPE_SECRET_KEY", label: "Stripe Secret Key", required: true },
-  { key: "STRIPE_WEBHOOK_SECRET", label: "Stripe Webhook Secret", required: true },
   { key: "NEXT_PUBLIC_APP_URL", label: "App URL", required: true },
-  { key: "ADMIN_EMAILS", label: "Admin Emails", required: true },
-  {
-    key: "NEXT_PUBLIC_STRIPE_PRO_PRICE_ID",
-    label: "Stripe Price ID (Pro)",
-    required: false,
-    placeholderTokens: ["placeholder"]
-  },
-  {
-    key: "NEXT_PUBLIC_STRIPE_VIP_PRICE_ID",
-    label: "Stripe Price ID (VIP)",
-    required: false,
-    placeholderTokens: ["placeholder"]
-  }
+  { key: "ADMIN_EMAILS", label: "Admin Emails", required: true }
 ];
 
 const normalizeValue = (value: string | undefined | null) => value?.trim() ?? "";

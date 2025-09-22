@@ -2,16 +2,16 @@
 
 ## Objetivos
 1. **CRUD de Plans dinâmico** – migração do array `PLANS` para persistência em banco, com API de gerenciamento e UI no painel.
-2. **Monitoramento de variáveis críticas** – checar chaves como `DEEPSEEK_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e sinalizar no painel quando ausentes.
+2. **Monitoramento de variáveis críticas** – checar chaves como `DEEPSEEK_API_KEY`, `ADMIN_EMAILS` etc., e sinalizar no painel quando ausentes.
 3. **Editor multi-prompt com versionamento** – separar prompt principal, fallback e onboarding, permitindo histórico por tipo e restauração rápida.
 
 ## Passo a Passo Proposto
 ### 1. Planos dinâmicos
-- Criar tabela `plans` no Supabase com colunas `id`, `name`, `description`, `price_monthly`, `price_yearly`, `stripe_price_id`, `features` (text[]), `is_active`.
+- Criar tabela `plans` no Supabase com colunas `id`, `name`, `description`, `price_monthly`, `price_yearly`, `features` (text[]), `is_active`.
 - Popular tabela com dados atuais do `lib/plans.ts` via script de migração (`docs/supabase/phase-4-config.sql`) e expor view somente de planos ativos.
 - Atualizar backend e rotas para ler planos do banco; manter fallback em `lib/plans` até finalizar migração.
 - Implementar `/api/admin/plans` (GET/POST/PATCH/DELETE soft) com políticas RLS restritas a admins.
-- Criar seção “Planos” no painel (Fase 4) com listagem, formulário e validações Stripe ID.
+- Criar seção “Planos” no painel (Fase 4) com listagem, formulário e validações básicas.
 
 ### 2. Monitor de variáveis de ambiente
 - Definir lista de envs obrigatórios/opcionais com descrições.
@@ -28,7 +28,7 @@
 ## Dependências e Considerações
 - Executar novo script SQL (criação de `plans`, `admin_prompts`) antes de liberar UI.
 - Garantir migração suave: enquanto o CRUD não estiver ativo, manter leitura fallback do array estático.
-- Validar impacto nas rotas públicas `/api/plans` (se existir) e nos fluxos de cobrança (Stripe price IDs).
+- Validar impacto nas rotas públicas `/api/plans` (se existir) e em qualquer interface que consuma os dados dos planos.
 - Adicionar testes manuais para edição simultânea de prompts e fallback em caso de chave ausente.
 
 ## Próximas Entregas sugeridas

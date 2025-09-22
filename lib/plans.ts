@@ -6,7 +6,6 @@ export interface Plan {
   description: string;
   priceMonthly: number;
   priceYearly?: number;
-  stripePriceId: string | null;
   features: string[];
 }
 
@@ -17,7 +16,6 @@ export const DEFAULT_PLANS: Plan[] = [
     description: "Entre no método HH3 com leituras guiadas limitadas por dia.",
     priceMonthly: 0,
     priceYearly: 0,
-    stripePriceId: null,
     features: [
       "2 leituras de sequência por dia",
       "Resumo interativo do Método 3",
@@ -30,7 +28,6 @@ export const DEFAULT_PLANS: Plan[] = [
     description: "Mentoria contínua com HH3 para executar o Método 3 sem atrasos.",
     priceMonthly: 29,
     priceYearly: 290,
-    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || "price_pro_placeholder",
     features: [
       "Leituras ilimitadas da roleta europeia",
       "Avaliação de sinal com vizinhos sugeridos",
@@ -43,7 +40,6 @@ export const DEFAULT_PLANS: Plan[] = [
     description: "Acesso direto ao HH3 com relatórios e suporte prioritário.",
     priceMonthly: 79,
     priceYearly: 790,
-    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_VIP_PRICE_ID || "price_vip_placeholder",
     features: [
       "Sessões de ajuste individual com HH3",
       "Relatórios avançados do desempenho por zona",

@@ -16,7 +16,6 @@ interface AdminPlan {
   description: string;
   price_monthly: number;
   price_yearly: number | null;
-  stripe_price_id: string | null;
   features: string[] | null;
   is_active: boolean;
   sort_order: number;
@@ -34,7 +33,6 @@ interface PlanFormValues {
   description: string;
   priceMonthly: number;
   priceYearly: number | null;
-  stripePriceId: string | null;
   features: string[];
   isActive: boolean;
   sortOrder: number;
@@ -46,7 +44,6 @@ const mapFormValues = (plan?: AdminPlan): PlanFormValues => ({
   description: plan?.description ?? "",
   priceMonthly: plan?.price_monthly ?? 0,
   priceYearly: plan?.price_yearly ?? null,
-  stripePriceId: plan?.stripe_price_id ?? null,
   features: plan?.features ?? [],
   isActive: plan?.is_active ?? true,
   sortOrder: plan?.sort_order ?? 0
@@ -78,7 +75,6 @@ function PlanForm({
         values.priceYearly === null || values.priceYearly === undefined
           ? null
           : Number(values.priceYearly) || 0,
-      stripePriceId: values.stripePriceId ? values.stripePriceId.trim() || null : null,
       features: values.features ?? [],
       isActive: values.isActive,
       sortOrder: Number(values.sortOrder) || 0
@@ -173,20 +169,6 @@ function PlanForm({
             placeholder="Opcional"
           />
         </div>
-      </div>
-
-      <div className="grid gap-2">
-        <label className="text-xs font-semibold uppercase text-muted-foreground" htmlFor="plan-stripe">
-          Stripe price ID (opcional)
-        </label>
-        <Input
-          id="plan-stripe"
-          value={values.stripePriceId ?? ""}
-          onChange={(event) =>
-            setValues((prev) => ({ ...prev, stripePriceId: event.target.value ? event.target.value : null }))
-          }
-          placeholder="price_123"
-        />
       </div>
 
       <div className="grid gap-2">
@@ -306,7 +288,6 @@ export function PlanSettings({ initialPlans, initialEnv }: PlanSettingsProps) {
           description: values.description,
           priceMonthly: values.priceMonthly,
           priceYearly: values.priceYearly,
-          stripePriceId: values.stripePriceId,
           features: values.features,
           isActive: values.isActive,
           sortOrder: values.sortOrder
@@ -344,7 +325,6 @@ export function PlanSettings({ initialPlans, initialEnv }: PlanSettingsProps) {
           description: values.description,
           priceMonthly: values.priceMonthly,
           priceYearly: values.priceYearly,
-          stripePriceId: values.stripePriceId,
           features: values.features,
           isActive: values.isActive,
           sortOrder: values.sortOrder
@@ -524,9 +504,6 @@ export function PlanSettings({ initialPlans, initialEnv }: PlanSettingsProps) {
                 </p>
                 <p>
                   <span className="font-semibold">Anual:</span> {priceYearly !== null ? `R$ ${priceYearly.toFixed(2)}` : "Não definido"}
-                </p>
-                <p>
-                  <span className="font-semibold">Stripe price ID:</span> {plan.stripe_price_id ?? "-"}
                 </p>
                 <p>
                   <span className="font-semibold">Ordem:</span> {plan.sort_order ?? 0}

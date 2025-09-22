@@ -7,7 +7,6 @@ const mapPlanRow = (row: {
   description: string;
   price_monthly: number;
   price_yearly: number | null;
-  stripe_price_id: string | null;
   features: string[] | null;
   sort_order?: number | null;
 }) => {
@@ -17,7 +16,6 @@ const mapPlanRow = (row: {
     description: row.description,
     priceMonthly: Number(row.price_monthly ?? 0),
     priceYearly: row.price_yearly !== null && row.price_yearly !== undefined ? Number(row.price_yearly) : undefined,
-    stripePriceId: row.stripe_price_id,
     features: Array.isArray(row.features) ? row.features : []
   };
 
@@ -29,7 +27,7 @@ export const fetchActivePlans = async (): Promise<Plan[]> => {
     const supabase = createServerSupabaseClient();
     const { data, error } = await supabase
       .from("active_plans")
-      .select("id, name, description, price_monthly, price_yearly, stripe_price_id, features, sort_order")
+      .select("id, name, description, price_monthly, price_yearly, features, sort_order")
       .order("sort_order", { ascending: true });
 
     if (error) {
@@ -51,10 +49,4 @@ export const fetchActivePlans = async (): Promise<Plan[]> => {
 export const fetchPlanById = async (planId: PlanId): Promise<Plan | undefined> => {
   const plans = await fetchActivePlans();
   return plans.find((plan) => plan.id === planId) ?? DEFAULT_PLANS.find((plan) => plan.id === planId);
-};
-
-export const fetchPlanByStripePrice = async (priceId: string | null | undefined): Promise<Plan | undefined> => {
-  if (!priceId) return undefined;
-  const plans = await fetchActivePlans();
-  return plans.find((plan) => plan.stripePriceId === priceId) ?? DEFAULT_PLANS.find((plan) => plan.stripePriceId === priceId);
 };

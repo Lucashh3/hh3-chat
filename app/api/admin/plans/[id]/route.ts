@@ -28,7 +28,6 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     description?: string;
     priceMonthly?: number;
     priceYearly?: number | null;
-    stripePriceId?: string | null;
     features?: string[] | string;
     isActive?: boolean;
     sortOrder?: number;
@@ -74,9 +73,6 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       const value = Number(payload.priceYearly);
       updates.price_yearly = Number.isFinite(value) ? value : null;
     }
-  }
-  if (payload.stripePriceId !== undefined) {
-    updates.stripe_price_id = payload.stripePriceId ? payload.stripePriceId.toString().trim() || null : null;
   }
   if (payload.features !== undefined) updates.features = parseFeatures(payload.features);
   if (payload.isActive !== undefined) updates.is_active = payload.isActive;

@@ -16,7 +16,7 @@ export default async function AdminSettingsPage() {
 
   const { data: plans, error } = await supabase
     .from("plans")
-    .select("id, name, description, price_monthly, price_yearly, stripe_price_id, features, is_active, sort_order, updated_at")
+    .select("id, name, description, price_monthly, price_yearly, features, is_active, sort_order, updated_at")
     .order("sort_order", { ascending: true })
     .order("updated_at", { ascending: false });
 

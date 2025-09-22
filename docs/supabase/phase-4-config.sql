@@ -61,7 +61,7 @@ begin
         'Mentoria contínua com HH3 para executar o Método 3 sem atrasos.',
         29,
         290,
-        coalesce(nullif(current_setting('app.stripe_pro_price_id', true), ''), 'price_pro_placeholder'),
+        null,
         array['Leituras ilimitadas da roleta europeia', 'Avaliação de sinal com vizinhos sugeridos', 'Histórico completo e plano de banca semanal'],
         1
       ),
@@ -71,7 +71,7 @@ begin
         'Acesso direto ao HH3 com relatórios e suporte prioritário.',
         79,
         790,
-        coalesce(nullif(current_setting('app.stripe_vip_price_id', true), ''), 'price_vip_placeholder'),
+        null,
         array['Sessões de ajuste individual com HH3', 'Relatórios avançados do desempenho por zona', 'Suporte dedicado para sessões ao vivo'],
         2
       );

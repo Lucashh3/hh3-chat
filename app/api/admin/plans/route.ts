@@ -48,7 +48,7 @@ export async function GET(request: Request) {
 
   const query = supabase
     .from("plans")
-    .select("id, name, description, price_monthly, price_yearly, stripe_price_id, features, is_active, sort_order, updated_at")
+    .select("id, name, description, price_monthly, price_yearly, features, is_active, sort_order, updated_at")
     .order("sort_order", { ascending: true })
     .order("updated_at", { ascending: false });
 
@@ -73,7 +73,6 @@ export async function POST(request: Request) {
     description?: string;
     priceMonthly?: number;
     priceYearly?: number | null;
-    stripePriceId?: string | null;
     features?: string[] | string;
     isActive?: boolean;
     sortOrder?: number;
@@ -106,15 +105,12 @@ export async function POST(request: Request) {
   const priceYearly =
     payload.priceYearly === null || payload.priceYearly === undefined ? null : Number(payload.priceYearly);
   const sortOrder = payload.sortOrder !== undefined ? Number(payload.sortOrder) : 0;
-  const stripePriceId = payload.stripePriceId?.toString().trim() || null;
-
   const { error } = await supabase.from("plans").insert({
     id,
     name,
     description,
     price_monthly: Number.isFinite(priceMonthly) ? priceMonthly : 0,
     price_yearly: priceYearly !== null && Number.isFinite(priceYearly) ? priceYearly : null,
-    stripe_price_id: stripePriceId,
     features,
     is_active: payload.isActive ?? true,
     sort_order: Number.isFinite(sortOrder) ? sortOrder : 0
