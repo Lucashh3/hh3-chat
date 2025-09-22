@@ -61,17 +61,16 @@ export async function POST(request: Request) {
   }
 
   try {
+    const upsertPayload: Database["public"]["Tables"]["stripe_webhook_events"]["Insert"] = {
+      stripe_event_id: eventId,
+      status,
+      error_message: errorMessage,
+      processed_at: status === "processed" ? new Date().toISOString() : null
+    };
+
     await adminClient
       .from("stripe_webhook_events")
-      .upsert(
-        {
-          stripe_event_id: eventId,
-          status,
-          error_message: errorMessage,
-          processed_at: status === "processed" ? new Date().toISOString() : null
-        },
-        { onConflict: "stripe_event_id" }
-      );
+      .upsert(upsertPayload, { onConflict: "stripe_event_id" });
   } catch (logError) {
     console.error("Não foi possível atualizar status do webhook", logError);
   }
