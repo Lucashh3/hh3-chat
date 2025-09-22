@@ -36,14 +36,14 @@ export async function POST(request: Request) {
     .from("stripe_webhook_events")
     .select("payload")
     .eq("stripe_event_id", eventId)
-    .maybeSingle();
+    .maybeSingle<Pick<Database["public"]["Tables"]["stripe_webhook_events"]["Row"], "payload">>();
 
   if (error) {
     console.error(error);
     return NextResponse.json({ error: "Não foi possível carregar o evento" }, { status: 500 });
   }
 
-  const payload = record?.payload as Database["public"]["Tables"]["stripe_webhook_events"]["Row"]["payload"];
+  const payload = record?.payload;
 
   if (!payload) {
     return NextResponse.json({ error: "Evento não encontrado" }, { status: 404 });
